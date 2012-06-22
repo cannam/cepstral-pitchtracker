@@ -1,0 +1,10 @@
+
+CFLAGS := -Wall -g -fPIC 
+CXXFLAGS := $(CFLAGS)
+
+LDFLAGS := -shared -Wl,-Bstatic -lvamp-sdk -Wl,-Bdynamic 
+
+PLUGIN_EXT := .so
+
+include Makefile.inc
+
