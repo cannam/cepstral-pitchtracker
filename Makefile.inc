@@ -25,5 +25,5 @@ clean:
 distclean:	clean
 		rm $(PLUGIN)
 
-libmain.cpp:	$(HEADERS)
-SimpleCepstrum.cpp:	$(HEADERS)
+libmain.o:	$(HEADERS) $(SOURCES)
+SimpleCepstrum.o:	$(HEADERS) $(SOURCES)
