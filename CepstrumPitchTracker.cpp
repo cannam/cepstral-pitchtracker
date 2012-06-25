@@ -271,7 +271,7 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
     double *io = new double[bs];
     double *logmag = new double[bs];
 
-    // The "forward difference" method
+    // The "inverse symmetric" method. Seems to be the most reliable
         
     for (int i = 0; i < hs; ++i) {
 
@@ -282,17 +282,11 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
 	
 	double lm = log(mag + 0.00000001);
 	
-	logmag[bs/2 + i - 1] = lm;
-	if (i < hs-1) {
-	    logmag[bs/2 - i - 1] = lm;
-	}
+	logmag[i] = lm;
+	if (i > 0) logmag[bs - i] = lm;
     }
 
-    fft(bs, false, logmag, 0, rawcep, io);
-
-    for (int i = 0; i < hs; ++i) {
-	rawcep[i] = fabs(io[i]) - fabs(rawcep[i]);
-    }
+    fft(bs, true, logmag, 0, rawcep, io);
     
     delete[] logmag;
     delete[] io;
@@ -333,8 +327,9 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
 
 //    std::cerr << "peakProportion = " << peakProportion << std::endl;
 //    std::cerr << "peak = " << m_inputSampleRate / (maxbin + m_binFrom) << std::endl;
+//    std::cerr << "bins = " << m_bins << std::endl;
 
-    if (peakProportion >= 0.03) {
+    if (peakProportion >= (0.00006 * m_bins)) {
 	Feature f;
 	f.hasTimestamp = true;
 	f.timestamp = timestamp;
