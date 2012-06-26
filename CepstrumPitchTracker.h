@@ -77,6 +77,12 @@ protected:
 
     double **m_history;
     
+    int m_prevpeak;
+    double m_prevprop;
+
+    double calculatePeakProportion(const double *data, double abstot, int n);
+    bool acceptPeak(int n, double peakProportion);
+
     void filter(const double *in, double *out);
     void fft(unsigned int n, bool inverse,
              double *ri, double *ii, double *ro, double *io);

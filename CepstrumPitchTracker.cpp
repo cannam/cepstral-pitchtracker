@@ -43,7 +43,9 @@ CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
     m_binFrom(0),
     m_binTo(0),
     m_bins(0),
-    m_history(0)
+    m_history(0),
+    m_prevpeak(0),
+    m_prevprop(0)
 {
 }
 
@@ -270,6 +272,41 @@ CepstrumPitchTracker::filter(const double *cep, double *result)
     }
 }
 
+double
+CepstrumPitchTracker::calculatePeakProportion(const double *data, double abstot, int n)
+{
+    double aroundPeak = data[n];
+    double peakProportion = 0.0;
+
+    int i = n - 1;
+    while (i > 0 && data[i] <= data[i+1]) {
+        aroundPeak += fabs(data[i]);
+        --i;
+    }
+    i = n + 1;
+    while (i < m_bins && data[i] <= data[i-1]) {
+        aroundPeak += fabs(data[i]);
+        ++i;
+    }
+    peakProportion = aroundPeak / abstot;
+
+    return peakProportion;
+}
+
+bool
+CepstrumPitchTracker::acceptPeak(int n, double peakProportion)
+{
+    bool accept = false;
+
+    if (abs(n - m_prevpeak) < 10) { //!!! should depend on bin count
+        accept = true;
+    } else if (peakProportion > m_prevprop * 2) {
+        accept = true;
+    }
+
+    return accept;
+}
+
 CepstrumPitchTracker::FeatureSet
 CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime timestamp)
 {
@@ -307,40 +344,60 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
     filter(rawcep, data);
     delete[] rawcep;
 
-    double maxval = 0.0;
-    int maxbin = 0;
     double abstot = 0.0;
+
+    for (int i = 0; i < n; ++i) {
+	abstot += fabs(data[i]);
+    }
+
+    double maxval = 0.0;
+    int maxbin = -1;
 
     for (int i = 0; i < n; ++i) {
         if (data[i] > maxval) {
             maxval = data[i];
             maxbin = i;
         }
-	abstot += fabs(data[i]);
     }
 
-    double aroundPeak = 0.0;
-    double peakProportion = 0.0;
-    if (maxval > 0.0) {
-        aroundPeak += fabs(maxval);
-        int i = maxbin - 1;
-        while (i > 0 && data[i] <= data[i+1]) {
-            aroundPeak += fabs(data[i]);
-            --i;
+    bool accepted = false;
+
+    if (maxbin >= 0) {
+        double pp = calculatePeakProportion(data, abstot, maxbin);
+        if (acceptPeak(maxbin, pp)) {
+            accepted = true;
+        } else {
+            // try a secondary peak
+            maxval = 0.0;
+            int secondbin = 0;
+            for (int i = 1; i < n-1; ++i) {
+                if (i != maxbin &&
+                    data[i] > data[i-1] &&
+                    data[i] > data[i+1] &&
+                    data[i] > maxval) {
+                    maxval = data[i];
+                    secondbin = i;
+                }
+            }
+            double spp = calculatePeakProportion(data, abstot, secondbin);
+            if (acceptPeak(secondbin, spp)) {
+                maxbin = secondbin;
+                pp = spp;
+                accepted = true;
+            }
         }
-        i = maxbin + 1;
-        while (i < n && data[i] <= data[i-1]) {
-            aroundPeak += fabs(data[i]);
-            ++i;
+        if (accepted) {
+            m_prevpeak = maxbin;
+            m_prevprop = pp;
         }
     }
-    peakProportion = aroundPeak / abstot;
-
+            
 //    std::cerr << "peakProportion = " << peakProportion << std::endl;
 //    std::cerr << "peak = " << m_inputSampleRate / (maxbin + m_binFrom) << std::endl;
 //    std::cerr << "bins = " << m_bins << std::endl;
 
-    if (peakProportion >= (0.00006 * m_bins)) {
+//    if (peakProportion >= (0.00006 * m_bins)) {
+    if (accepted) {
 	Feature f;
 	f.hasTimestamp = true;
 	f.timestamp = timestamp;
