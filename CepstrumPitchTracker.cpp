@@ -38,7 +38,8 @@ CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
     m_blockSize(1024),
     m_fmin(50),
     m_fmax(1000),
-    m_histlen(3),
+    m_histlen(1),
+    m_vflen(3),
     m_binFrom(0),
     m_binTo(0),
     m_bins(0),
@@ -246,7 +247,17 @@ CepstrumPitchTracker::filter(const double *cep, double *result)
     }
 
     for (int i = 0; i < m_bins; ++i) {
-        m_history[hix][i] = cep[i + m_binFrom];
+        double v = 0;
+        int n = 0;
+        // average according to the vertical filter length
+        for (int j = -m_vflen/2; j <= m_vflen/2; ++j) {
+            int ix = i + m_binFrom + j;
+            if (ix >= 0 && ix < m_blockSize) {
+                v += cep[ix];
+                ++n;
+            }
+        }
+        m_history[hix][i] = v / n;
     }
 
     for (int i = 0; i < m_bins; ++i) {

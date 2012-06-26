@@ -69,6 +69,7 @@ protected:
     float m_fmin;
     float m_fmax;
     int m_histlen;
+    int m_vflen;
 
     int m_binFrom;
     int m_binTo;
