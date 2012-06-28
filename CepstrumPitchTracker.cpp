@@ -30,6 +30,79 @@
 #include <complex>
 
 using std::string;
+using std::vector;
+
+CepstrumPitchTracker::Hypothesis::Hypothesis(Estimate s)
+{
+    m_state = Provisional;
+    m_pending.push_back(s);
+    m_age = 0;
+}
+
+bool
+CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s)
+{
+    if (m_pending.empty()) {
+        return true;
+    }
+    Estimate last = m_pending[m_pending.size()-1];
+    double r = s.freq / last.freq;
+    int cents = lrint(1200.0 * (log(r) / log(2.0)));
+    return (cents > -200 && cents < 200);
+}
+
+bool 
+CepstrumPitchTracker::Hypothesis::isSatisfied()
+{
+    return (m_pending.size() > 2);
+}
+
+bool
+CepstrumPitchTracker::Hypothesis::test(Estimate s)
+{
+    if (m_state == Rejected || m_state == Expired) {
+        return false;
+    }
+
+    if (++m_age > 3) {
+        if (m_state == Satisfied) {
+            m_state = Expired;
+        } else {
+            m_state = Rejected;
+        }
+        return false;
+    }
+
+    if (isWithinTolerance(s)) {
+        m_pending.push_back(s);
+        if (m_state == Provisional) {
+            if (isSatisfied()) {
+                m_state == Satisfied;
+            }
+        }
+        m_age = 0;
+        return true;
+    }
+    
+    return false;
+}
+
+CepstrumPitchTracker::Hypothesis::State
+CepstrumPitchTracker::Hypothesis::getState()
+{
+    return m_state;
+}
+
+CepstrumPitchTracker::Hypothesis::Estimates
+CepstrumPitchTracker::Hypothesis::getAcceptedEstimates()
+{
+    if (m_state == Satisfied || m_state == Expired) {
+        return m_pending;
+    } else {
+        return Estimates();
+    }
+}
+
 
 CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
     Plugin(inputSampleRate),
@@ -43,6 +116,7 @@ CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
     m_binFrom(0),
     m_binTo(0),
     m_bins(0),
+    m_accepted(0),
     m_history(0),
     m_prevpeak(0),
     m_prevprop(0)

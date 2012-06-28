@@ -75,6 +75,43 @@ protected:
     int m_binTo;
     int m_bins; // count of "interesting" bins, those returned in m_cepOutput
 
+    class Hypothesis {
+
+    public:
+        struct Estimate {
+            double freq;
+            Vamp::RealTime time;
+        };
+        typedef std::vector<Estimate> Estimates;
+        
+        Hypothesis(Estimate s);
+        ~Hypothesis();
+
+        enum State {
+            Provisional,
+            Satisfied,
+            Rejected,
+            Expired
+        };
+
+        bool test(Estimate);
+        State getState();
+
+        Estimates getAcceptedEstimates();
+
+    private:
+        bool isWithinTolerance(Estimate);
+        bool isSatisfied();
+
+        State m_state;
+        Estimates m_pending;
+        int m_age;
+    };
+
+    typedef std::vector<Hypothesis> Hypotheses;
+    Hypotheses m_possible;
+    Hypothesis *m_accepted;
+
     double **m_history;
     
     int m_prevpeak;
