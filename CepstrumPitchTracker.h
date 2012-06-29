@@ -103,6 +103,8 @@ protected:
 
         Estimates getAcceptedEstimates();
 
+        void addFeatures(FeatureList &fl);
+
     private:
         bool isWithinTolerance(Estimate);
         bool isSatisfied();

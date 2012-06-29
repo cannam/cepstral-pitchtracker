@@ -38,6 +38,10 @@ CepstrumPitchTracker::Hypothesis::Hypothesis()
     m_age = 0;
 }
 
+CepstrumPitchTracker::Hypothesis::~Hypothesis()
+{
+}
+
 bool
 CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s)
 {
@@ -124,6 +128,17 @@ CepstrumPitchTracker::Hypothesis::getAcceptedEstimates()
     }
 }
 
+void
+CepstrumPitchTracker::Hypothesis::addFeatures(FeatureList &fl)
+{
+    for (int i = 0; i < m_pending.size(); ++i) {
+	Feature f;
+	f.hasTimestamp = true;
+	f.timestamp = m_pending[i].time;
+	f.values.push_back(m_pending[i].freq);
+	fl.push_back(f);
+    }
+}
 
 CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
     Plugin(inputSampleRate),
@@ -462,15 +477,33 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
     e.time = timestamp;
 
     m_accepted.advanceTime();
+
     for (int i = 0; i < m_possible.size(); ++i) {
         m_possible[i].advanceTime();
     }
 
-    if (m_accepted.test(e)) {
-        return fs;
-    }
+    if (!m_accepted.test(e)) {
+        int candidate = -1;
+        for (int i = 0; i < m_possible.size(); ++i) {
+            if (m_possible[i].test(e)) {
+                if (m_possible[i].getState() == Hypothesis::Satisfied) {
+                    candidate = i;
+                }
+                break;
+            }
+        }
+        if (m_accepted.getState() == Hypothesis::Expired) {
+            m_accepted.addFeatures(fs[0]);
+            if (candidate >= 0) {
+                m_accepted = m_possible[candidate];
+            } else {
+                m_accepted = Hypothesis();
+            }
+        }
 
-    //...
+        //!!! and also need to reap rejected/expired hypotheses from the list
+    }  
+            
 
 /*
     bool accepted = false;
@@ -510,6 +543,7 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
 //    std::cerr << "bins = " << m_bins << std::endl;
 
 //    if (peakProportion >= (0.00006 * m_bins)) {
+/*
     if (accepted) {
 	Feature f;
 	f.hasTimestamp = true;
@@ -517,7 +551,7 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
 	f.values.push_back(m_inputSampleRate / (maxbin + m_binFrom));
 	fs[0].push_back(f);
     }
-
+*/
     delete[] data;
     return fs;
 }
@@ -526,6 +560,9 @@ CepstrumPitchTracker::FeatureSet
 CepstrumPitchTracker::getRemainingFeatures()
 {
     FeatureSet fs;
+    if (m_accepted.getState() != Hypothesis::New) {
+        m_accepted.addFeatures(fs[0]);
+    }
     return fs;
 }
 
