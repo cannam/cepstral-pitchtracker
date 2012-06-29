@@ -32,10 +32,9 @@
 using std::string;
 using std::vector;
 
-CepstrumPitchTracker::Hypothesis::Hypothesis(Estimate s)
+CepstrumPitchTracker::Hypothesis::Hypothesis()
 {
-    m_state = Provisional;
-    m_pending.push_back(s);
+    m_state = New;
     m_age = 0;
 }
 
@@ -57,35 +56,57 @@ CepstrumPitchTracker::Hypothesis::isSatisfied()
     return (m_pending.size() > 2);
 }
 
+void
+CepstrumPitchTracker::Hypothesis::advanceTime()
+{
+    ++m_age;
+}
+
 bool
 CepstrumPitchTracker::Hypothesis::test(Estimate s)
 {
-    if (m_state == Rejected || m_state == Expired) {
-        return false;
-    }
+    bool accept = false;
 
-    if (++m_age > 3) {
-        if (m_state == Satisfied) {
-            m_state = Expired;
-        } else {
+    switch (m_state) {
+
+    case New:
+        m_state = Provisional;
+        accept = true;
+        break;
+
+    case Provisional:
+        if (m_age > 3) {
             m_state = Rejected;
+        } else if (isWithinTolerance(s)) {
+            accept = true;
         }
-        return false;
+        break;
+        
+    case Satisfied:
+        if (m_age > 3) {
+            m_state = Expired;
+        } else if (isWithinTolerance(s)) {
+            accept = true;
+        }
+        break;
+
+    case Rejected:
+        break;
+
+    case Expired:
+        break;
     }
 
-    if (isWithinTolerance(s)) {
+    if (accept) {
         m_pending.push_back(s);
-        if (m_state == Provisional) {
-            if (isSatisfied()) {
-                m_state == Satisfied;
-            }
-        }
         m_age = 0;
-        return true;
+        if (m_state == Provisional && isSatisfied()) {
+            m_state = Satisfied;
+        }
     }
-    
-    return false;
-}
+
+    return accept;
+}        
 
 CepstrumPitchTracker::Hypothesis::State
 CepstrumPitchTracker::Hypothesis::getState()
@@ -116,7 +137,6 @@ CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
     m_binFrom(0),
     m_binTo(0),
     m_bins(0),
-    m_accepted(0),
     m_history(0),
     m_prevpeak(0),
     m_prevprop(0)
@@ -434,6 +454,25 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
         }
     }
 
+    if (maxbin < 0) return fs;
+
+    double peakfreq = m_inputSampleRate / (maxbin + m_binFrom);
+    Hypothesis::Estimate e;
+    e.freq = peakfreq;
+    e.time = timestamp;
+
+    m_accepted.advanceTime();
+    for (int i = 0; i < m_possible.size(); ++i) {
+        m_possible[i].advanceTime();
+    }
+
+    if (m_accepted.test(e)) {
+        return fs;
+    }
+
+    //...
+
+/*
     bool accepted = false;
 
     if (maxbin >= 0) {
@@ -465,7 +504,7 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
             m_prevprop = pp;
         }
     }
-            
+*/
 //    std::cerr << "peakProportion = " << peakProportion << std::endl;
 //    std::cerr << "peak = " << m_inputSampleRate / (maxbin + m_binFrom) << std::endl;
 //    std::cerr << "bins = " << m_bins << std::endl;

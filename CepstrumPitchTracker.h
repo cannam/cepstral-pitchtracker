@@ -84,10 +84,11 @@ protected:
         };
         typedef std::vector<Estimate> Estimates;
         
-        Hypothesis(Estimate s);
+        Hypothesis();
         ~Hypothesis();
 
         enum State {
+            New,
             Provisional,
             Satisfied,
             Rejected,
@@ -95,6 +96,9 @@ protected:
         };
 
         bool test(Estimate);
+
+        void advanceTime();
+
         State getState();
 
         Estimates getAcceptedEstimates();
@@ -110,7 +114,7 @@ protected:
 
     typedef std::vector<Hypothesis> Hypotheses;
     Hypotheses m_possible;
-    Hypothesis *m_accepted;
+    Hypothesis m_accepted;
 
     double **m_history;
     
