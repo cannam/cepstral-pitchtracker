@@ -489,14 +489,24 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
     }
 
     if (!m_accepted.test(e)) {
+
         int candidate = -1;
+        bool accepted = false;
+
         for (int i = 0; i < m_possible.size(); ++i) {
             if (m_possible[i].test(e)) {
+                accepted = true;
                 if (m_possible[i].getState() == Hypothesis::Satisfied) {
                     candidate = i;
                 }
                 break;
             }
+        }
+
+        if (!accepted) {
+            Hypothesis h;
+            h.test(e); //!!! must succeed as h is new, so perhaps there should be a ctor for this
+            m_possible.push_back(h);
         }
 
         if (m_accepted.getState() == Hypothesis::Expired) {
