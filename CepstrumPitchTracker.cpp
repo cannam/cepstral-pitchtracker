@@ -118,6 +118,12 @@ CepstrumPitchTracker::Hypothesis::getState()
     return m_state;
 }
 
+int
+CepstrumPitchTracker::Hypothesis::getPendingLength()
+{
+    return m_pending.size();
+}
+
 CepstrumPitchTracker::Hypothesis::Estimates
 CepstrumPitchTracker::Hypothesis::getAcceptedEstimates()
 {
@@ -492,14 +498,23 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
                 break;
             }
         }
+
         if (m_accepted.getState() == Hypothesis::Expired) {
             m_accepted.addFeatures(fs[0]);
+        }
+        
+        if (m_accepted.getState() == Hypothesis::Expired ||
+            m_accepted.getState() == Hypothesis::Rejected) {
             if (candidate >= 0) {
                 m_accepted = m_possible[candidate];
             } else {
                 m_accepted = Hypothesis();
             }
         }
+
+        std::cerr << "accepted length = " << m_accepted.getPendingLength()
+                  << ", state = " << m_accepted.getState()
+                  << ", hypothesis count = " << m_possible.size() << std::endl;
 
         //!!! and also need to reap rejected/expired hypotheses from the list
     }  

@@ -101,6 +101,7 @@ protected:
 
         State getState();
 
+        int getPendingLength();
         Estimates getAcceptedEstimates();
 
         void addFeatures(FeatureList &fl);
