@@ -51,7 +51,7 @@ CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s)
     Estimate last = m_pending[m_pending.size()-1];
     double r = s.freq / last.freq;
     int cents = lrint(1200.0 * (log(r) / log(2.0)));
-    return (cents > -200 && cents < 200);
+    return (cents > -100 && cents < 100);
 }
 
 bool 
@@ -109,7 +109,7 @@ CepstrumPitchTracker::Hypothesis::test(Estimate s)
         }
     }
 
-    return accept;
+    return accept && (m_state == Satisfied);
 }        
 
 CepstrumPitchTracker::Hypothesis::State
@@ -522,12 +522,22 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
             }
         }
 
+        // reap rejected/expired hypotheses from possible list
+        Hypotheses toReap = m_possible;
+        m_possible.clear();
+        for (int i = 0; i < toReap.size(); ++i) {
+            Hypothesis h = toReap[i];
+            if (h.getState() != Hypothesis::Rejected && 
+                h.getState() != Hypothesis::Expired) {
+                m_possible.push_back(h);
+            }
+        }
+    }  
+
         std::cerr << "accepted length = " << m_accepted.getPendingLength()
                   << ", state = " << m_accepted.getState()
                   << ", hypothesis count = " << m_possible.size() << std::endl;
 
-        //!!! and also need to reap rejected/expired hypotheses from the list
-    }  
             
 
 /*
