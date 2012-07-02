@@ -57,7 +57,18 @@ CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s)
 bool 
 CepstrumPitchTracker::Hypothesis::isSatisfied()
 {
-    return (m_pending.size() > 2);
+    if (m_pending.empty()) return false;
+    
+    double meanConfidence = 0.0;
+    for (int i = 0; i < m_pending.size(); ++i) {
+        meanConfidence += m_pending[i].confidence;
+    }
+    meanConfidence /= m_pending.size();
+
+    int lengthRequired = int(2.0 / meanConfidence + 0.5);
+    std::cerr << "meanConfidence = " << meanConfidence << ", lengthRequired = " << lengthRequired << ", length = " << m_pending.size() << std::endl;
+
+    return (m_pending.size() > lengthRequired);
 }
 
 void
@@ -153,25 +164,15 @@ CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
     m_blockSize(1024),
     m_fmin(50),
     m_fmax(1000),
-    m_histlen(1),
     m_vflen(3),
     m_binFrom(0),
     m_binTo(0),
-    m_bins(0),
-    m_history(0),
-    m_prevpeak(0),
-    m_prevprop(0)
+    m_bins(0)
 {
 }
 
 CepstrumPitchTracker::~CepstrumPitchTracker()
 {
-    if (m_history) {
-        for (int i = 0; i < m_histlen; ++i) {
-            delete[] m_history[i];
-        }
-        delete[] m_history;
-    }
 }
 
 string
@@ -328,11 +329,6 @@ CepstrumPitchTracker::initialise(size_t channels, size_t stepSize, size_t blockS
 
     m_bins = (m_binTo - m_binFrom) + 1;
 
-    m_history = new double *[m_histlen];
-    for (int i = 0; i < m_histlen; ++i) {
-        m_history[i] = new double[m_bins];
-    }
-
     reset();
 
     return true;
@@ -341,28 +337,11 @@ CepstrumPitchTracker::initialise(size_t channels, size_t stepSize, size_t blockS
 void
 CepstrumPitchTracker::reset()
 {
-    for (int i = 0; i < m_histlen; ++i) {
-        for (int j = 0; j < m_bins; ++j) {
-            m_history[i][j] = 0.0;
-        }
-    }
 }
 
 void
-CepstrumPitchTracker::filter(const double *cep, double *result)
+CepstrumPitchTracker::filter(const double *cep, double *data)
 {
-    int hix = m_histlen - 1; // current history index
-
-    // roll back the history
-    if (m_histlen > 1) {
-        double *oldest = m_history[0];
-        for (int i = 1; i < m_histlen; ++i) {
-            m_history[i-1] = m_history[i];
-        }
-        // and stick this back in the newest spot, to recycle
-        m_history[hix] = oldest;
-    }
-
     for (int i = 0; i < m_bins; ++i) {
         double v = 0;
         int n = 0;
@@ -374,52 +353,8 @@ CepstrumPitchTracker::filter(const double *cep, double *result)
                 ++n;
             }
         }
-        m_history[hix][i] = v / n;
+        data[i] = v / n;
     }
-
-    for (int i = 0; i < m_bins; ++i) {
-        double mean = 0.0;
-        for (int j = 0; j < m_histlen; ++j) {
-            mean += m_history[j][i];
-        }
-        mean /= m_histlen;
-        result[i] = mean;
-    }
-}
-
-double
-CepstrumPitchTracker::calculatePeakProportion(const double *data, double abstot, int n)
-{
-    double aroundPeak = data[n];
-    double peakProportion = 0.0;
-
-    int i = n - 1;
-    while (i > 0 && data[i] <= data[i+1]) {
-        aroundPeak += fabs(data[i]);
-        --i;
-    }
-    i = n + 1;
-    while (i < m_bins && data[i] <= data[i-1]) {
-        aroundPeak += fabs(data[i]);
-        ++i;
-    }
-    peakProportion = aroundPeak / abstot;
-
-    return peakProportion;
-}
-
-bool
-CepstrumPitchTracker::acceptPeak(int n, double peakProportion)
-{
-    bool accept = false;
-
-    if (abs(n - m_prevpeak) < 10) { //!!! should depend on bin count
-        accept = true;
-    } else if (peakProportion > m_prevprop * 2) {
-        accept = true;
-    }
-
-    return accept;
 }
 
 CepstrumPitchTracker::FeatureSet
@@ -475,12 +410,33 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
         }
     }
 
-    if (maxbin < 0) return fs;
+    if (maxbin < 0) {
+        delete[] data;
+        return fs;
+    }
+
+    double nextPeakVal = 0.0;
+    for (int i = 1; i+1 < n; ++i) {
+        if (data[i] > data[i-1] &&
+            data[i] > data[i+1] &&
+            i != maxbin &&
+            data[i] > nextPeakVal) {
+            nextPeakVal = data[i];
+        }
+    }
 
     double peakfreq = m_inputSampleRate / (maxbin + m_binFrom);
+
+    double confidence = 0.0;
+    if (nextPeakVal != 0.0) {
+        confidence = ((maxval / nextPeakVal) - 1.0) / 4.0;
+        if (confidence > 1.0) confidence = 1.0;
+    }
+
     Hypothesis::Estimate e;
     e.freq = peakfreq;
     e.time = timestamp;
+    e.confidence = confidence;
 
     m_accepted.advanceTime();
 
@@ -534,59 +490,10 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
         }
     }  
 
-        std::cerr << "accepted length = " << m_accepted.getPendingLength()
-                  << ", state = " << m_accepted.getState()
-                  << ", hypothesis count = " << m_possible.size() << std::endl;
+    std::cerr << "accepted length = " << m_accepted.getPendingLength()
+              << ", state = " << m_accepted.getState()
+              << ", hypothesis count = " << m_possible.size() << std::endl;
 
-            
-
-/*
-    bool accepted = false;
-
-    if (maxbin >= 0) {
-        double pp = calculatePeakProportion(data, abstot, maxbin);
-        if (acceptPeak(maxbin, pp)) {
-            accepted = true;
-        } else {
-            // try a secondary peak
-            maxval = 0.0;
-            int secondbin = 0;
-            for (int i = 1; i < n-1; ++i) {
-                if (i != maxbin &&
-                    data[i] > data[i-1] &&
-                    data[i] > data[i+1] &&
-                    data[i] > maxval) {
-                    maxval = data[i];
-                    secondbin = i;
-                }
-            }
-            double spp = calculatePeakProportion(data, abstot, secondbin);
-            if (acceptPeak(secondbin, spp)) {
-                maxbin = secondbin;
-                pp = spp;
-                accepted = true;
-            }
-        }
-        if (accepted) {
-            m_prevpeak = maxbin;
-            m_prevprop = pp;
-        }
-    }
-*/
-//    std::cerr << "peakProportion = " << peakProportion << std::endl;
-//    std::cerr << "peak = " << m_inputSampleRate / (maxbin + m_binFrom) << std::endl;
-//    std::cerr << "bins = " << m_bins << std::endl;
-
-//    if (peakProportion >= (0.00006 * m_bins)) {
-/*
-    if (accepted) {
-	Feature f;
-	f.hasTimestamp = true;
-	f.timestamp = timestamp;
-	f.values.push_back(m_inputSampleRate / (maxbin + m_binFrom));
-	fs[0].push_back(f);
-    }
-*/
     delete[] data;
     return fs;
 }
@@ -595,7 +502,7 @@ CepstrumPitchTracker::FeatureSet
 CepstrumPitchTracker::getRemainingFeatures()
 {
     FeatureSet fs;
-    if (m_accepted.getState() != Hypothesis::New) {
+    if (m_accepted.getState() == Hypothesis::Satisfied) {
         m_accepted.addFeatures(fs[0]);
     }
     return fs;

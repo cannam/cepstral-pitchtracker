@@ -68,7 +68,6 @@ protected:
     size_t m_blockSize;
     float m_fmin;
     float m_fmax;
-    int m_histlen;
     int m_vflen;
 
     int m_binFrom;
@@ -81,6 +80,7 @@ protected:
         struct Estimate {
             double freq;
             Vamp::RealTime time;
+            double confidence;
         };
         typedef std::vector<Estimate> Estimates;
         
@@ -118,14 +118,6 @@ protected:
     typedef std::vector<Hypothesis> Hypotheses;
     Hypotheses m_possible;
     Hypothesis m_accepted;
-
-    double **m_history;
-    
-    int m_prevpeak;
-    double m_prevprop;
-
-    double calculatePeakProportion(const double *data, double abstot, int n);
-    bool acceptPeak(int n, double peakProportion);
 
     void filter(const double *in, double *out);
     void fft(unsigned int n, bool inverse,
