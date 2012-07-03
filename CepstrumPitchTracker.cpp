@@ -31,6 +31,7 @@
 
 using std::string;
 using std::vector;
+using Vamp::RealTime;
 
 CepstrumPitchTracker::Hypothesis::Hypothesis()
 {
@@ -48,10 +49,22 @@ CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s)
     if (m_pending.empty()) {
         return true;
     }
+
+    Estimate first = m_pending[0];
     Estimate last = m_pending[m_pending.size()-1];
+
+    // check we are within a relatively close tolerance of the last
+    // candidate
     double r = s.freq / last.freq;
     int cents = lrint(1200.0 * (log(r) / log(2.0)));
-    return (cents > -100 && cents < 100);
+    if (cents < -40 || cents > 40) return false;
+
+    // and within a wider tolerance of our starting candidate
+    r = s.freq / first.freq;
+    cents = lrint(1200.0 * (log(r) / log(2.0)));
+    if (cents < -80 || cents > 80) return false;
+    
+    return true;
 }
 
 bool 
@@ -145,16 +158,54 @@ CepstrumPitchTracker::Hypothesis::getAcceptedEstimates()
     }
 }
 
+CepstrumPitchTracker::Hypothesis::Note
+CepstrumPitchTracker::Hypothesis::getAveragedNote()
+{
+    Note n;
+
+    if (!(m_state == Satisfied || m_state == Expired)) {
+        n.freq = 0.0;
+        n.time = RealTime::zeroTime;
+        n.duration = RealTime::zeroTime;
+        return n;
+    }
+
+    n.time = m_pending.begin()->time;
+
+    Estimates::iterator i = m_pending.end();
+    --i;
+    n.duration = i->time - n.time;
+
+    // just mean frequency for now, but this isn't at all right
+    double acc = 0.0;
+    for (int i = 0; i < m_pending.size(); ++i) {
+        acc += m_pending[i].freq;
+    }
+    acc /= m_pending.size();
+    n.freq = acc;
+    
+    return n;
+}
+
 void
-CepstrumPitchTracker::Hypothesis::addFeatures(FeatureList &fl)
+CepstrumPitchTracker::Hypothesis::addFeatures(FeatureSet &fs)
 {
     for (int i = 0; i < m_pending.size(); ++i) {
 	Feature f;
 	f.hasTimestamp = true;
 	f.timestamp = m_pending[i].time;
 	f.values.push_back(m_pending[i].freq);
-	fl.push_back(f);
+	fs[0].push_back(f);
     }
+
+    Feature nf;
+    nf.hasTimestamp = true;
+    nf.hasDuration = true;
+    Note n = getAveragedNote();
+    nf.timestamp = n.time;
+    nf.duration = n.duration;
+    nf.values.push_back(n.freq);
+    fs[1].push_back(nf);
 }
 
 CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
@@ -303,6 +354,21 @@ CepstrumPitchTracker::getOutputDescriptors() const
     d.hasDuration = false;
     outputs.push_back(d);
 
+    d.identifier = "notes";
+    d.name = "Notes";
+    d.description = "Derived fixed-pitch note frequencies";
+    d.unit = "Hz";
+    d.hasFixedBinCount = true;
+    d.binCount = 1;
+    d.hasKnownExtents = true;
+    d.minValue = m_fmin;
+    d.maxValue = m_fmax;
+    d.isQuantized = false;
+    d.sampleType = OutputDescriptor::FixedSampleRate;
+    d.sampleRate = (m_inputSampleRate / m_stepSize);
+    d.hasDuration = true;
+    outputs.push_back(d);
+
     return outputs;
 }
 
@@ -358,7 +424,7 @@ CepstrumPitchTracker::filter(const double *cep, double *data)
 }
 
 CepstrumPitchTracker::FeatureSet
-CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime timestamp)
+CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timestamp)
 {
     FeatureSet fs;
 
@@ -466,7 +532,7 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, Vamp::RealTime t
         }
 
         if (m_accepted.getState() == Hypothesis::Expired) {
-            m_accepted.addFeatures(fs[0]);
+            m_accepted.addFeatures(fs);
         }
         
         if (m_accepted.getState() == Hypothesis::Expired ||
@@ -503,7 +569,7 @@ CepstrumPitchTracker::getRemainingFeatures()
 {
     FeatureSet fs;
     if (m_accepted.getState() == Hypothesis::Satisfied) {
-        m_accepted.addFeatures(fs[0]);
+        m_accepted.addFeatures(fs);
     }
     return fs;
 }

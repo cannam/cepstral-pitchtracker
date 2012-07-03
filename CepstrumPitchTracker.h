@@ -83,6 +83,12 @@ protected:
             double confidence;
         };
         typedef std::vector<Estimate> Estimates;
+
+        struct Note {
+            double freq;
+            Vamp::RealTime time;
+            Vamp::RealTime duration;
+        };
         
         Hypothesis();
         ~Hypothesis();
@@ -103,8 +109,9 @@ protected:
 
         int getPendingLength();
         Estimates getAcceptedEstimates();
+        Note getAveragedNote();
 
-        void addFeatures(FeatureList &fl);
+        void addFeatures(FeatureSet &fs);
 
     private:
         bool isWithinTolerance(Estimate);
