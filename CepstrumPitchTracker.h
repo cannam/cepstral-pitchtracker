@@ -116,6 +116,7 @@ protected:
     private:
         bool isWithinTolerance(Estimate);
         bool isSatisfied();
+        double getMeanFrequency();
 
         State m_state;
         Estimates m_pending;

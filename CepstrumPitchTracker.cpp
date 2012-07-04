@@ -50,17 +50,16 @@ CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s)
         return true;
     }
 
-    Estimate first = m_pending[0];
-    Estimate last = m_pending[m_pending.size()-1];
-
     // check we are within a relatively close tolerance of the last
     // candidate
+    Estimate last = m_pending[m_pending.size()-1];
     double r = s.freq / last.freq;
     int cents = lrint(1200.0 * (log(r) / log(2.0)));
-    if (cents < -40 || cents > 40) return false;
+    if (cents < -60 || cents > 60) return false;
 
-    // and within a wider tolerance of our starting candidate
-    r = s.freq / first.freq;
+    // and within a slightly bigger tolerance of the current mean
+    double meanFreq = getMeanFrequency();
+    r = s.freq / meanFreq;
     cents = lrint(1200.0 * (log(r) / log(2.0)));
     if (cents < -80 || cents > 80) return false;
     
@@ -158,6 +157,17 @@ CepstrumPitchTracker::Hypothesis::getAcceptedEstimates()
     }
 }
 
+double
+CepstrumPitchTracker::Hypothesis::getMeanFrequency()
+{
+    double acc = 0.0;
+    for (int i = 0; i < m_pending.size(); ++i) {
+        acc += m_pending[i].freq;
+    }
+    acc /= m_pending.size();
+    return acc;
+}
+
 CepstrumPitchTracker::Hypothesis::Note
 CepstrumPitchTracker::Hypothesis::getAveragedNote()
 {
@@ -176,13 +186,8 @@ CepstrumPitchTracker::Hypothesis::getAveragedNote()
     --i;
     n.duration = i->time - n.time;
 
-    // just mean frequency for now, but this isn't at all right
-    double acc = 0.0;
-    for (int i = 0; i < m_pending.size(); ++i) {
-        acc += m_pending[i].freq;
-    }
-    acc /= m_pending.size();
-    n.freq = acc;
+    // just mean frequency for now, but this isn't at all right perceptually
+    n.freq = getMeanFrequency();
     
     return n;
 }
