@@ -220,7 +220,7 @@ CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
     m_blockSize(1024),
     m_fmin(50),
     m_fmax(1000),
-    m_vflen(3),
+    m_vflen(1),
     m_binFrom(0),
     m_binTo(0),
     m_bins(0)
@@ -428,6 +428,71 @@ CepstrumPitchTracker::filter(const double *cep, double *data)
     }
 }
 
+double
+CepstrumPitchTracker::cubicInterpolate(const double y[4], double x)
+{
+    double a0 = y[3] - y[2] - y[0] + y[1];
+    double a1 = y[0] - y[1] - a0;
+    double a2 = y[2] - y[0];
+    double a3 = y[1];
+    return
+        a0 * x * x * x +
+        a1 * x * x +
+        a2 * x +
+        a3;
+}
+
+double
+CepstrumPitchTracker::findInterpolatedPeak(const double *in, int maxbin)
+{
+    if (maxbin < 2 || maxbin > m_bins - 3) {
+        return maxbin;
+    }
+
+    double maxval = 0.0;
+    double maxidx = maxbin;
+
+    const int divisions = 10;
+    double y[4];
+
+    y[0] = in[maxbin-1];
+    y[1] = in[maxbin];
+    y[2] = in[maxbin+1];
+    y[3] = in[maxbin+2];
+    for (int i = 0; i < divisions; ++i) {
+        double probe = double(i) / double(divisions);
+        double value = cubicInterpolate(y, probe);
+        if (value > maxval) {
+            maxval = value; 
+            maxidx = maxbin + probe;
+        }
+    }
+
+    y[3] = y[2];
+    y[2] = y[1];
+    y[1] = y[0];
+    y[0] = in[maxbin-2];
+    for (int i = 0; i < divisions; ++i) {
+        double probe = double(i) / double(divisions);
+        double value = cubicInterpolate(y, probe);
+        if (value > maxval) {
+            maxval = value; 
+            maxidx = maxbin - 1 + probe;
+        }
+    }
+
+/*
+    std::cerr << "centre = " << maxbin << ": ["
+              << in[maxbin-2] << ","
+              << in[maxbin-1] << ","
+              << in[maxbin] << ","
+              << in[maxbin+1] << ","
+              << in[maxbin+2] << "] -> " << maxidx << std::endl;
+*/
+
+    return maxidx;
+}
+
 CepstrumPitchTracker::FeatureSet
 CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timestamp)
 {
@@ -496,7 +561,8 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
         }
     }
 
-    double peakfreq = m_inputSampleRate / (maxbin + m_binFrom);
+    double cimax = findInterpolatedPeak(data, maxbin);
+    double peakfreq = m_inputSampleRate / (cimax + m_binFrom);
 
     double confidence = 0.0;
     if (nextPeakVal != 0.0) {
