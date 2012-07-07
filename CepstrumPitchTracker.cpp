@@ -530,12 +530,6 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
     filter(rawcep, data);
     delete[] rawcep;
 
-    double abstot = 0.0;
-
-    for (int i = 0; i < n; ++i) {
-	abstot += fabs(data[i]);
-    }
-
     double maxval = 0.0;
     int maxbin = -1;
 
@@ -566,7 +560,7 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 
     double confidence = 0.0;
     if (nextPeakVal != 0.0) {
-        confidence = ((maxval / nextPeakVal) - 1.0) / 4.0;
+        confidence = (maxval - nextPeakVal) / 200.0;
         if (confidence > 1.0) confidence = 1.0;
     }
 
