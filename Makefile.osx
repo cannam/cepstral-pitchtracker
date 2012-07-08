@@ -1,0 +1,10 @@
+
+CFLAGS := -I../inst/include -Wall -g -fPIC 
+CXXFLAGS := $(CFLAGS)
+
+LDFLAGS := -dynamiclib -L../inst/lib -lvamp-sdk
+
+PLUGIN_EXT := .dylib
+
+include Makefile.inc
+
