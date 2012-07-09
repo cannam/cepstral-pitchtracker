@@ -525,6 +525,8 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
     delete[] logmag;
     delete[] io;
 
+    double cep1 = rawcep[1];
+
     int n = m_bins;
     double *data = new double[n];
     filter(rawcep, data);
@@ -560,8 +562,13 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 
     double confidence = 0.0;
     if (nextPeakVal != 0.0) {
-        confidence = (maxval - nextPeakVal) / 200.0;
-        if (confidence > 1.0) confidence = 1.0;
+        std::cerr << "maxval = " << maxval << ", cep1 = " << cep1 << std::endl;
+        double conf0 = (maxval - nextPeakVal) / 80.0;
+        double conf1 = (cep1 / bs) / 2;
+        if (conf0 > 1.0) conf0 = 1.0;
+        if (conf1 > 1.0) conf1 = 1.0;
+        confidence = conf0 * conf1;
+        std::cerr << "conf0 = " << conf0 << ", conf1 = " << conf1 << ", confidence = " << confidence << std::endl;
     }
 
     Hypothesis::Estimate e;
