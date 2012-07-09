@@ -648,7 +648,7 @@ CepstrumPitchTracker::getRemainingFeatures()
 
 void
 CepstrumPitchTracker::fft(unsigned int n, bool inverse,
-                    double *ri, double *ii, double *ro, double *io)
+                          double *ri, double *ii, double *ro, double *io)
 {
     if (!ri || !ro || !io) return;
 
@@ -671,17 +671,14 @@ CepstrumPitchTracker::fft(unsigned int n, bool inverse,
 	}
     }
 
-    int *table = new int[n];
+    int table[n];
 
     for (i = 0; i < n; ++i) {
-	
         m = i;
-
         for (j = k = 0; j < bits; ++j) {
             k = (k << 1) | (m & 1);
             m >>= 1;
         }
-
         table[i] = k;
     }
 
