@@ -671,28 +671,18 @@ CepstrumPitchTracker::fft(unsigned int n, bool inverse,
 	}
     }
 
-    static unsigned int tableSize = 0;
-    static int *table = 0;
+    int *table = new int[n];
 
-    if (tableSize != n) {
-
-	delete[] table;
-
-	table = new int[n];
-
-	for (i = 0; i < n; ++i) {
+    for (i = 0; i < n; ++i) {
 	
-	    m = i;
+        m = i;
 
-	    for (j = k = 0; j < bits; ++j) {
-		k = (k << 1) | (m & 1);
-		m >>= 1;
-	    }
+        for (j = k = 0; j < bits; ++j) {
+            k = (k << 1) | (m & 1);
+            m >>= 1;
+        }
 
-	    table[i] = k;
-	}
-
-	tableSize = n;
+        table[i] = k;
     }
 
     if (ii) {
