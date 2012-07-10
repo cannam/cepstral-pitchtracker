@@ -77,7 +77,10 @@ CepstrumPitchTracker::Hypothesis::isSatisfied()
     }
     meanConfidence /= m_pending.size();
 
-    int lengthRequired = int(2.0 / meanConfidence + 0.5);
+    int lengthRequired = 10000;
+    if (meanConfidence > 0.0) {
+        lengthRequired = int(2.0 / meanConfidence + 0.5);
+    }
     std::cerr << "meanConfidence = " << meanConfidence << ", lengthRequired = " << lengthRequired << ", length = " << m_pending.size() << std::endl;
 
     return (m_pending.size() > lengthRequired);
@@ -219,7 +222,7 @@ CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
     m_stepSize(256),
     m_blockSize(1024),
     m_fmin(50),
-    m_fmax(1000),
+    m_fmax(900),
     m_vflen(1),
     m_binFrom(0),
     m_binTo(0),
@@ -507,25 +510,30 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 
     // The "inverse symmetric" method. Seems to be the most reliable
         
+    double magmean = 0.0;
+
     for (int i = 0; i < hs; ++i) {
 
 	double power =
 	    inputBuffers[0][i*2  ] * inputBuffers[0][i*2  ] +
 	    inputBuffers[0][i*2+1] * inputBuffers[0][i*2+1];
 	double mag = sqrt(power);
-	
+
+        magmean += mag;
+
 	double lm = log(mag + 0.00000001);
 	
 	logmag[i] = lm;
 	if (i > 0) logmag[bs - i] = lm;
     }
 
+    magmean /= hs;
+    double threshold = 0.1; // for magmean
+    
     fft(bs, true, logmag, 0, rawcep, io);
     
     delete[] logmag;
     delete[] io;
-
-    double cep1 = rawcep[1];
 
     int n = m_bins;
     double *data = new double[n];
@@ -562,13 +570,9 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 
     double confidence = 0.0;
     if (nextPeakVal != 0.0) {
-        std::cerr << "maxval = " << maxval << ", cep1 = " << cep1 << std::endl;
-        double conf0 = (maxval - nextPeakVal) / 80.0;
-        double conf1 = (cep1 / bs) / 2;
-        if (conf0 > 1.0) conf0 = 1.0;
-        if (conf1 > 1.0) conf1 = 1.0;
-        confidence = conf0 * conf1;
-        std::cerr << "conf0 = " << conf0 << ", conf1 = " << conf1 << ", confidence = " << confidence << std::endl;
+        confidence = (maxval - nextPeakVal) / 100.0;
+        if (magmean < threshold) confidence = 0.0;
+        std::cerr << "magmean = " << magmean << ", confidence = " << confidence << std::endl;
     }
 
     Hypothesis::Estimate e;
