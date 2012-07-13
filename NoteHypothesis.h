@@ -49,6 +49,9 @@ public:
     ~NoteHypothesis();
 
     struct Estimate {
+        Estimate() : freq(0), time(), confidence(0) { }
+        Estimate(double _f, RealTime _t, double _c) :
+            freq(_f), time(_t), confidence(_c) { }
 	double freq;
 	RealTime time;
 	double confidence;
@@ -76,6 +79,9 @@ public:
     Estimates getAcceptedEstimates() const;
 
     struct Note {
+        Note() : freq(0), time(), duration() { }
+        Note(double _f, RealTime _t, RealTime _d) :
+            freq(_f), time(_t), duration(_d) { }
 	double freq;
 	RealTime time;
 	RealTime duration;
