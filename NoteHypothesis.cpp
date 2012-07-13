@@ -134,6 +134,7 @@ double
 NoteHypothesis::getMeanFrequency() const
 {
     double acc = 0.0;
+    if (m_pending.empty()) return acc;
     for (int i = 0; i < (int)m_pending.size(); ++i) {
         acc += m_pending[i].freq;
     }

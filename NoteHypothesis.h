@@ -52,6 +52,9 @@ public:
         Estimate() : freq(0), time(), confidence(0) { }
         Estimate(double _f, RealTime _t, double _c) :
             freq(_f), time(_t), confidence(_c) { }
+        bool operator==(const Estimate &e) const {
+            return e.freq == freq && e.time == time && e.confidence == confidence;
+        }
 	double freq;
 	RealTime time;
 	double confidence;
@@ -82,11 +85,19 @@ public:
         Note() : freq(0), time(), duration() { }
         Note(double _f, RealTime _t, RealTime _d) :
             freq(_f), time(_t), duration(_d) { }
+        bool operator==(const Note &e) const {
+            return e.freq == freq && e.time == time && e.duration == duration;
+        }
 	double freq;
 	RealTime time;
 	RealTime duration;
     };
     
+    /**
+     * Return the mean frequency of the accepted estimates
+     */
+    double getMeanFrequency() const;
+
     /**
      * Return a single note roughly matching this hypothesis
      */
@@ -96,7 +107,6 @@ private:
     bool isWithinTolerance(Estimate) const;
     bool isOutOfDateFor(Estimate) const;
     bool isSatisfied() const;
-    double getMeanFrequency() const;
     
     State m_state;
     Estimates m_pending;
