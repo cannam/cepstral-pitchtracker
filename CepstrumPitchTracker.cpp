@@ -572,7 +572,7 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 
     double confidence = 0.0;
     if (nextPeakVal != 0.0) {
-        confidence = (maxval - nextPeakVal) / 100.0;
+        confidence = (maxval - nextPeakVal) * 10.0;
         if (magmean < threshold) confidence = 0.0;
         std::cerr << "magmean = " << magmean << ", confidence = " << confidence << std::endl;
     }
