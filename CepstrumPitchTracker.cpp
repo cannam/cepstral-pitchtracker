@@ -38,7 +38,6 @@ using Vamp::RealTime;
 CepstrumPitchTracker::Hypothesis::Hypothesis()
 {
     m_state = New;
-    m_age = 0;
 }
 
 CepstrumPitchTracker::Hypothesis::~Hypothesis()
@@ -68,6 +67,15 @@ CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s)
     return true;
 }
 
+bool
+CepstrumPitchTracker::Hypothesis::isOutOfDateFor(Estimate s)
+{
+    if (m_pending.empty()) return false;
+
+    return ((s.time - m_pending[m_pending.size()-1].time) > 
+            RealTime::fromMilliseconds(40));
+}
+
 bool 
 CepstrumPitchTracker::Hypothesis::isSatisfied()
 {
@@ -88,14 +96,8 @@ CepstrumPitchTracker::Hypothesis::isSatisfied()
     return (m_pending.size() > lengthRequired);
 }
 
-void
-CepstrumPitchTracker::Hypothesis::advanceTime()
-{
-    ++m_age;
-}
-
 bool
-CepstrumPitchTracker::Hypothesis::test(Estimate s)
+CepstrumPitchTracker::Hypothesis::accept(Estimate s)
 {
     bool accept = false;
 
@@ -107,7 +109,7 @@ CepstrumPitchTracker::Hypothesis::test(Estimate s)
         break;
 
     case Provisional:
-        if (m_age > 3) {
+        if (isOutOfDateFor(s)) {
             m_state = Rejected;
         } else if (isWithinTolerance(s)) {
             accept = true;
@@ -115,7 +117,7 @@ CepstrumPitchTracker::Hypothesis::test(Estimate s)
         break;
         
     case Satisfied:
-        if (m_age > 3) {
+        if (isOutOfDateFor(s)) {
             m_state = Expired;
         } else if (isWithinTolerance(s)) {
             accept = true;
@@ -131,13 +133,12 @@ CepstrumPitchTracker::Hypothesis::test(Estimate s)
 
     if (accept) {
         m_pending.push_back(s);
-        m_age = 0;
         if (m_state == Provisional && isSatisfied()) {
             m_state = Satisfied;
         }
     }
 
-    return accept && (m_state == Satisfied);
+    return accept;
 }        
 
 CepstrumPitchTracker::Hypothesis::State
@@ -582,21 +583,20 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
     e.time = timestamp;
     e.confidence = confidence;
 
-    m_accepted.advanceTime();
-
+//    m_good.advanceTime();
     for (int i = 0; i < m_possible.size(); ++i) {
-        m_possible[i].advanceTime();
+//        m_possible[i].advanceTime();
     }
 
-    if (!m_accepted.test(e)) {
+    if (!m_good.accept(e)) {
 
         int candidate = -1;
         bool accepted = false;
 
         for (int i = 0; i < m_possible.size(); ++i) {
-            if (m_possible[i].test(e)) {
-                accepted = true;
+            if (m_possible[i].accept(e)) {
                 if (m_possible[i].getState() == Hypothesis::Satisfied) {
+                    accepted = true;
                     candidate = i;
                 }
                 break;
@@ -605,20 +605,20 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 
         if (!accepted) {
             Hypothesis h;
-            h.test(e); //!!! must succeed as h is new, so perhaps there should be a ctor for this
+            h.accept(e); //!!! must succeed as h is new, so perhaps there should be a ctor for this
             m_possible.push_back(h);
         }
 
-        if (m_accepted.getState() == Hypothesis::Expired) {
-            m_accepted.addFeatures(fs);
+        if (m_good.getState() == Hypothesis::Expired) {
+            m_good.addFeatures(fs);
         }
         
-        if (m_accepted.getState() == Hypothesis::Expired ||
-            m_accepted.getState() == Hypothesis::Rejected) {
+        if (m_good.getState() == Hypothesis::Expired ||
+            m_good.getState() == Hypothesis::Rejected) {
             if (candidate >= 0) {
-                m_accepted = m_possible[candidate];
+                m_good = m_possible[candidate];
             } else {
-                m_accepted = Hypothesis();
+                m_good = Hypothesis();
             }
         }
 
@@ -634,8 +634,8 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
         }
     }  
 
-    std::cerr << "accepted length = " << m_accepted.getPendingLength()
-              << ", state = " << m_accepted.getState()
+    std::cerr << "accepted length = " << m_good.getPendingLength()
+              << ", state = " << m_good.getState()
               << ", hypothesis count = " << m_possible.size() << std::endl;
 
     delete[] data;
@@ -646,8 +646,8 @@ CepstrumPitchTracker::FeatureSet
 CepstrumPitchTracker::getRemainingFeatures()
 {
     FeatureSet fs;
-    if (m_accepted.getState() == Hypothesis::Satisfied) {
-        m_accepted.addFeatures(fs);
+    if (m_good.getState() == Hypothesis::Satisfied) {
+        m_good.addFeatures(fs);
     }
     return fs;
 }

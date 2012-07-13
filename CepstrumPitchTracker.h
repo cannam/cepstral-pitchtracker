@@ -101,9 +101,7 @@ protected:
             Expired
         };
 
-        bool test(Estimate);
-
-        void advanceTime();
+        bool accept(Estimate);
 
         State getState();
 
@@ -115,17 +113,17 @@ protected:
 
     private:
         bool isWithinTolerance(Estimate);
+        bool isOutOfDateFor(Estimate);
         bool isSatisfied();
         double getMeanFrequency();
 
         State m_state;
         Estimates m_pending;
-        int m_age;
     };
 
     typedef std::vector<Hypothesis> Hypotheses;
     Hypotheses m_possible;
-    Hypothesis m_accepted;
+    Hypothesis m_good;
 
     void filter(const double *in, double *out);
     double cubicInterpolate(const double[4], double);
