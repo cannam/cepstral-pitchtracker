@@ -147,12 +147,6 @@ CepstrumPitchTracker::Hypothesis::getState()
     return m_state;
 }
 
-int
-CepstrumPitchTracker::Hypothesis::getPendingLength()
-{
-    return m_pending.size();
-}
-
 CepstrumPitchTracker::Hypothesis::Estimates
 CepstrumPitchTracker::Hypothesis::getAcceptedEstimates()
 {
@@ -633,10 +627,6 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
             }
         }
     }  
-
-    std::cerr << "accepted length = " << m_good.getPendingLength()
-              << ", state = " << m_good.getState()
-              << ", hypothesis count = " << m_possible.size() << std::endl;
 
     delete[] data;
     return fs;

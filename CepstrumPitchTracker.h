@@ -105,7 +105,6 @@ protected:
 
         State getState();
 
-        int getPendingLength();
         Estimates getAcceptedEstimates();
         Note getAveragedNote();
 
