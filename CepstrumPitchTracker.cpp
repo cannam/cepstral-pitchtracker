@@ -45,7 +45,7 @@ CepstrumPitchTracker::Hypothesis::~Hypothesis()
 }
 
 bool
-CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s)
+CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s) const
 {
     if (m_pending.empty()) {
         return true;
@@ -68,7 +68,7 @@ CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s)
 }
 
 bool
-CepstrumPitchTracker::Hypothesis::isOutOfDateFor(Estimate s)
+CepstrumPitchTracker::Hypothesis::isOutOfDateFor(Estimate s) const
 {
     if (m_pending.empty()) return false;
 
@@ -77,7 +77,7 @@ CepstrumPitchTracker::Hypothesis::isOutOfDateFor(Estimate s)
 }
 
 bool 
-CepstrumPitchTracker::Hypothesis::isSatisfied()
+CepstrumPitchTracker::Hypothesis::isSatisfied() const
 {
     if (m_pending.empty()) return false;
     
@@ -91,7 +91,6 @@ CepstrumPitchTracker::Hypothesis::isSatisfied()
     if (meanConfidence > 0.0) {
         lengthRequired = int(2.0 / meanConfidence + 0.5);
     }
-    std::cerr << "meanConfidence = " << meanConfidence << ", lengthRequired = " << lengthRequired << ", length = " << m_pending.size() << std::endl;
 
     return (m_pending.size() > lengthRequired);
 }
@@ -142,13 +141,13 @@ CepstrumPitchTracker::Hypothesis::accept(Estimate s)
 }        
 
 CepstrumPitchTracker::Hypothesis::State
-CepstrumPitchTracker::Hypothesis::getState()
+CepstrumPitchTracker::Hypothesis::getState() const
 {
     return m_state;
 }
 
 CepstrumPitchTracker::Hypothesis::Estimates
-CepstrumPitchTracker::Hypothesis::getAcceptedEstimates()
+CepstrumPitchTracker::Hypothesis::getAcceptedEstimates() const
 {
     if (m_state == Satisfied || m_state == Expired) {
         return m_pending;
@@ -158,7 +157,7 @@ CepstrumPitchTracker::Hypothesis::getAcceptedEstimates()
 }
 
 double
-CepstrumPitchTracker::Hypothesis::getMeanFrequency()
+CepstrumPitchTracker::Hypothesis::getMeanFrequency() const
 {
     double acc = 0.0;
     for (int i = 0; i < m_pending.size(); ++i) {
@@ -169,7 +168,7 @@ CepstrumPitchTracker::Hypothesis::getMeanFrequency()
 }
 
 CepstrumPitchTracker::Hypothesis::Note
-CepstrumPitchTracker::Hypothesis::getAveragedNote()
+CepstrumPitchTracker::Hypothesis::getAveragedNote() const
 {
     Note n;
 
@@ -182,7 +181,7 @@ CepstrumPitchTracker::Hypothesis::getAveragedNote()
 
     n.time = m_pending.begin()->time;
 
-    Estimates::iterator i = m_pending.end();
+    Estimates::const_iterator i = m_pending.end();
     --i;
     n.duration = i->time - n.time;
 
@@ -190,27 +189,6 @@ CepstrumPitchTracker::Hypothesis::getAveragedNote()
     n.freq = getMeanFrequency();
     
     return n;
-}
-
-void
-CepstrumPitchTracker::Hypothesis::addFeatures(FeatureSet &fs)
-{
-    for (int i = 0; i < m_pending.size(); ++i) {
-	Feature f;
-	f.hasTimestamp = true;
-	f.timestamp = m_pending[i].time;
-	f.values.push_back(m_pending[i].freq);
-	fs[0].push_back(f);
-    }
-
-    Feature nf;
-    nf.hasTimestamp = true;
-    nf.hasDuration = true;
-    Note n = getAveragedNote();
-    nf.timestamp = n.time;
-    nf.duration = n.duration;
-    nf.values.push_back(n.freq);
-    fs[1].push_back(nf);
 }
 
 CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
@@ -411,6 +389,29 @@ CepstrumPitchTracker::reset()
 }
 
 void
+CepstrumPitchTracker::addFeaturesFrom(Hypothesis h, FeatureSet &fs)
+{
+    Hypothesis::Estimates es = h.getAcceptedEstimates();
+
+    for (int i = 0; i < es.size(); ++i) {
+	Feature f;
+	f.hasTimestamp = true;
+	f.timestamp = es[i].time;
+	f.values.push_back(es[i].freq);
+	fs[0].push_back(f);
+    }
+
+    Feature nf;
+    nf.hasTimestamp = true;
+    nf.hasDuration = true;
+    Hypothesis::Note n = h.getAveragedNote();
+    nf.timestamp = n.time;
+    nf.duration = n.duration;
+    nf.values.push_back(n.freq);
+    fs[1].push_back(nf);
+}
+
+void
 CepstrumPitchTracker::filter(const double *cep, double *data)
 {
     for (int i = 0; i < m_bins; ++i) {
@@ -604,7 +605,7 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
         }
 
         if (m_good.getState() == Hypothesis::Expired) {
-            m_good.addFeatures(fs);
+            addFeaturesFrom(m_good, fs);
         }
         
         if (m_good.getState() == Hypothesis::Expired ||
@@ -637,7 +638,7 @@ CepstrumPitchTracker::getRemainingFeatures()
 {
     FeatureSet fs;
     if (m_good.getState() == Hypothesis::Satisfied) {
-        m_good.addFeatures(fs);
+        addFeaturesFrom(m_good, fs);
     }
     return fs;
 }

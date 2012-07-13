@@ -103,18 +103,15 @@ protected:
 
         bool accept(Estimate);
 
-        State getState();
-
-        Estimates getAcceptedEstimates();
-        Note getAveragedNote();
-
-        void addFeatures(FeatureSet &fs);
+        State getState() const;
+        Estimates getAcceptedEstimates() const;
+        Note getAveragedNote() const;
 
     private:
-        bool isWithinTolerance(Estimate);
-        bool isOutOfDateFor(Estimate);
-        bool isSatisfied();
-        double getMeanFrequency();
+        bool isWithinTolerance(Estimate) const;
+        bool isOutOfDateFor(Estimate) const;
+        bool isSatisfied() const;
+        double getMeanFrequency() const;
 
         State m_state;
         Estimates m_pending;
@@ -123,6 +120,8 @@ protected:
     typedef std::vector<Hypothesis> Hypotheses;
     Hypotheses m_possible;
     Hypothesis m_good;
+
+    void addFeaturesFrom(Hypothesis h, FeatureSet &fs);
 
     void filter(const double *in, double *out);
     double cubicInterpolate(const double[4], double);
