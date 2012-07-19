@@ -22,10 +22,12 @@
     WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef _CEPSTRUM_PITCH_H_
-#define _CEPSTRUM_PITCH_H_
+#ifndef _CEPSTRAL_PITCH_H_
+#define _CEPSTRAL_PITCH_H_
 
 #include <vamp-sdk/Plugin.h>
+
+#include "NoteHypothesis.h"
 
 class CepstralPitchTracker : public Vamp::Plugin
 {
@@ -76,54 +78,11 @@ protected:
     int m_binTo;
     int m_bins; // count of "interesting" bins, those returned in m_cepOutput
 
-    class Hypothesis {
-
-    public:
-        struct Estimate {
-            double freq;
-            Vamp::RealTime time;
-            double confidence;
-        };
-        typedef std::vector<Estimate> Estimates;
-
-        struct Note {
-            double freq;
-            Vamp::RealTime time;
-            Vamp::RealTime duration;
-        };
-        
-        Hypothesis();
-        ~Hypothesis();
-
-        enum State {
-            New,
-            Provisional,
-            Satisfied,
-            Rejected,
-            Expired
-        };
-
-        bool accept(Estimate);
-
-        State getState() const;
-        Estimates getAcceptedEstimates() const;
-        Note getAveragedNote() const;
-
-    private:
-        bool isWithinTolerance(Estimate) const;
-        bool isOutOfDateFor(Estimate) const;
-        bool isSatisfied() const;
-        double getMeanFrequency() const;
-
-        State m_state;
-        Estimates m_pending;
-    };
-
-    typedef std::vector<Hypothesis> Hypotheses;
+    typedef std::vector<NoteHypothesis> Hypotheses;
     Hypotheses m_possible;
-    Hypothesis m_good;
+    NoteHypothesis m_good;
 
-    void addFeaturesFrom(Hypothesis h, FeatureSet &fs);
+    void addFeaturesFrom(NoteHypothesis h, FeatureSet &fs);
 
     void filter(const double *in, double *out);
     double cubicInterpolate(const double[4], double);

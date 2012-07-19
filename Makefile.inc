@@ -8,9 +8,11 @@ CFLAGS		:= $(CFLAGS)
 CXXFLAGS	:= $(CXXFLAGS) 
 LDFLAGS		:= $(LDFLAGS)
 
-HEADERS := CepstralPitchTracker.h
+HEADERS := CepstralPitchTracker.h \
+	   NoteHypothesis.h
 
 SOURCES := CepstralPitchTracker.cpp \
+	   NoteHypothesis.cpp \
            libmain.cpp
 
 OBJECTS := $(SOURCES:.cpp=.o)

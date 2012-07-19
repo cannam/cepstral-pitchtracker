@@ -4,10 +4,8 @@
 #ifndef _NOTE_HYPOTHESIS_H_
 #define _NOTE_HYPOTHESIS_H_
 
-#include "base/RealTime.h"
+#include "vamp-sdk/RealTime.h"
 #include <vector>
-
-namespace Turbot {
 
 /**
  * An agent used to test an incoming series of instantaneous pitch
@@ -50,13 +48,13 @@ public:
 
     struct Estimate {
         Estimate() : freq(0), time(), confidence(0) { }
-        Estimate(double _f, RealTime _t, double _c) :
+        Estimate(double _f, Vamp::RealTime _t, double _c) :
             freq(_f), time(_t), confidence(_c) { }
         bool operator==(const Estimate &e) const {
             return e.freq == freq && e.time == time && e.confidence == confidence;
         }
 	double freq;
-	RealTime time;
+        Vamp::RealTime time;
 	double confidence;
     };
     typedef std::vector<Estimate> Estimates;
@@ -83,14 +81,14 @@ public:
 
     struct Note {
         Note() : freq(0), time(), duration() { }
-        Note(double _f, RealTime _t, RealTime _d) :
+        Note(double _f, Vamp::RealTime _t, Vamp::RealTime _d) :
             freq(_f), time(_t), duration(_d) { }
         bool operator==(const Note &e) const {
             return e.freq == freq && e.time == time && e.duration == duration;
         }
 	double freq;
-	RealTime time;
-	RealTime duration;
+	Vamp::RealTime time;
+	Vamp::RealTime duration;
     };
     
     /**
@@ -111,7 +109,5 @@ private:
     State m_state;
     Estimates m_pending;
 };
-
-}
 
 #endif

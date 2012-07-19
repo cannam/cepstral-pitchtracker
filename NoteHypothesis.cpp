@@ -5,9 +5,7 @@
 
 #include <cmath>
 
-#include "system/sysutils.h"
-
-namespace Turbot {
+using Vamp::RealTime;
 
 NoteHypothesis::NoteHypothesis()
 {
@@ -164,7 +162,5 @@ NoteHypothesis::getAveragedNote() const
     n.freq = getMeanFrequency();
     
     return n;
-}
-
 }
 

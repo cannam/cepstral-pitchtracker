@@ -37,161 +37,6 @@ using std::string;
 using std::vector;
 using Vamp::RealTime;
 
-CepstralPitchTracker::Hypothesis::Hypothesis()
-{
-    m_state = New;
-}
-
-CepstralPitchTracker::Hypothesis::~Hypothesis()
-{
-}
-
-bool
-CepstralPitchTracker::Hypothesis::isWithinTolerance(Estimate s) const
-{
-    if (m_pending.empty()) {
-        return true;
-    }
-
-    // check we are within a relatively close tolerance of the last
-    // candidate
-    Estimate last = m_pending[m_pending.size()-1];
-    double r = s.freq / last.freq;
-    int cents = lrint(1200.0 * (log(r) / log(2.0)));
-    if (cents < -60 || cents > 60) return false;
-
-    // and within a slightly bigger tolerance of the current mean
-    double meanFreq = getMeanFrequency();
-    r = s.freq / meanFreq;
-    cents = lrint(1200.0 * (log(r) / log(2.0)));
-    if (cents < -80 || cents > 80) return false;
-    
-    return true;
-}
-
-bool
-CepstralPitchTracker::Hypothesis::isOutOfDateFor(Estimate s) const
-{
-    if (m_pending.empty()) return false;
-
-    return ((s.time - m_pending[m_pending.size()-1].time) > 
-            RealTime::fromMilliseconds(40));
-}
-
-bool 
-CepstralPitchTracker::Hypothesis::isSatisfied() const
-{
-    if (m_pending.empty()) return false;
-    
-    double meanConfidence = 0.0;
-    for (int i = 0; i < m_pending.size(); ++i) {
-        meanConfidence += m_pending[i].confidence;
-    }
-    meanConfidence /= m_pending.size();
-
-    int lengthRequired = 10000;
-    if (meanConfidence > 0.0) {
-        lengthRequired = int(2.0 / meanConfidence + 0.5);
-    }
-
-    return (m_pending.size() > lengthRequired);
-}
-
-bool
-CepstralPitchTracker::Hypothesis::accept(Estimate s)
-{
-    bool accept = false;
-
-    switch (m_state) {
-
-    case New:
-        m_state = Provisional;
-        accept = true;
-        break;
-
-    case Provisional:
-        if (isOutOfDateFor(s)) {
-            m_state = Rejected;
-        } else if (isWithinTolerance(s)) {
-            accept = true;
-        }
-        break;
-        
-    case Satisfied:
-        if (isOutOfDateFor(s)) {
-            m_state = Expired;
-        } else if (isWithinTolerance(s)) {
-            accept = true;
-        }
-        break;
-
-    case Rejected:
-        break;
-
-    case Expired:
-        break;
-    }
-
-    if (accept) {
-        m_pending.push_back(s);
-        if (m_state == Provisional && isSatisfied()) {
-            m_state = Satisfied;
-        }
-    }
-
-    return accept;
-}        
-
-CepstralPitchTracker::Hypothesis::State
-CepstralPitchTracker::Hypothesis::getState() const
-{
-    return m_state;
-}
-
-CepstralPitchTracker::Hypothesis::Estimates
-CepstralPitchTracker::Hypothesis::getAcceptedEstimates() const
-{
-    if (m_state == Satisfied || m_state == Expired) {
-        return m_pending;
-    } else {
-        return Estimates();
-    }
-}
-
-double
-CepstralPitchTracker::Hypothesis::getMeanFrequency() const
-{
-    double acc = 0.0;
-    for (int i = 0; i < m_pending.size(); ++i) {
-        acc += m_pending[i].freq;
-    }
-    acc /= m_pending.size();
-    return acc;
-}
-
-CepstralPitchTracker::Hypothesis::Note
-CepstralPitchTracker::Hypothesis::getAveragedNote() const
-{
-    Note n;
-
-    if (!(m_state == Satisfied || m_state == Expired)) {
-        n.freq = 0.0;
-        n.time = RealTime::zeroTime;
-        n.duration = RealTime::zeroTime;
-        return n;
-    }
-
-    n.time = m_pending.begin()->time;
-
-    Estimates::const_iterator i = m_pending.end();
-    --i;
-    n.duration = i->time - n.time;
-
-    // just mean frequency for now, but this isn't at all right perceptually
-    n.freq = getMeanFrequency();
-    
-    return n;
-}
 
 CepstralPitchTracker::CepstralPitchTracker(float inputSampleRate) :
     Plugin(inputSampleRate),
@@ -320,8 +165,6 @@ CepstralPitchTracker::getOutputDescriptors() const
 {
     OutputList outputs;
 
-    int n = 0;
-
     OutputDescriptor d;
 
     d.identifier = "f0";
@@ -391,11 +234,11 @@ CepstralPitchTracker::reset()
 }
 
 void
-CepstralPitchTracker::addFeaturesFrom(Hypothesis h, FeatureSet &fs)
+CepstralPitchTracker::addFeaturesFrom(NoteHypothesis h, FeatureSet &fs)
 {
-    Hypothesis::Estimates es = h.getAcceptedEstimates();
+    NoteHypothesis::Estimates es = h.getAcceptedEstimates();
 
-    for (int i = 0; i < es.size(); ++i) {
+    for (int i = 0; i < (int)es.size(); ++i) {
 	Feature f;
 	f.hasTimestamp = true;
 	f.timestamp = es[i].time;
@@ -406,7 +249,7 @@ CepstralPitchTracker::addFeaturesFrom(Hypothesis h, FeatureSet &fs)
     Feature nf;
     nf.hasTimestamp = true;
     nf.hasDuration = true;
-    Hypothesis::Note n = h.getAveragedNote();
+    NoteHypothesis::Note n = h.getAveragedNote();
     nf.timestamp = n.time;
     nf.duration = n.duration;
     nf.values.push_back(n.freq);
@@ -422,7 +265,7 @@ CepstralPitchTracker::filter(const double *cep, double *data)
         // average according to the vertical filter length
         for (int j = -m_vflen/2; j <= m_vflen/2; ++j) {
             int ix = i + m_binFrom + j;
-            if (ix >= 0 && ix < m_blockSize) {
+            if (ix >= 0 && ix < (int)m_blockSize) {
                 v += cep[ix];
                 ++n;
             }
@@ -575,24 +418,19 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
         std::cerr << "magmean = " << magmean << ", confidence = " << confidence << std::endl;
     }
 
-    Hypothesis::Estimate e;
+    NoteHypothesis::Estimate e;
     e.freq = peakfreq;
     e.time = timestamp;
     e.confidence = confidence;
-
-//    m_good.advanceTime();
-    for (int i = 0; i < m_possible.size(); ++i) {
-//        m_possible[i].advanceTime();
-    }
 
     if (!m_good.accept(e)) {
 
         int candidate = -1;
         bool accepted = false;
 
-        for (int i = 0; i < m_possible.size(); ++i) {
+        for (int i = 0; i < (int)m_possible.size(); ++i) {
             if (m_possible[i].accept(e)) {
-                if (m_possible[i].getState() == Hypothesis::Satisfied) {
+                if (m_possible[i].getState() == NoteHypothesis::Satisfied) {
                     accepted = true;
                     candidate = i;
                 }
@@ -601,31 +439,31 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
         }
 
         if (!accepted) {
-            Hypothesis h;
+            NoteHypothesis h;
             h.accept(e); //!!! must succeed as h is new, so perhaps there should be a ctor for this
             m_possible.push_back(h);
         }
 
-        if (m_good.getState() == Hypothesis::Expired) {
+        if (m_good.getState() == NoteHypothesis::Expired) {
             addFeaturesFrom(m_good, fs);
         }
         
-        if (m_good.getState() == Hypothesis::Expired ||
-            m_good.getState() == Hypothesis::Rejected) {
+        if (m_good.getState() == NoteHypothesis::Expired ||
+            m_good.getState() == NoteHypothesis::Rejected) {
             if (candidate >= 0) {
                 m_good = m_possible[candidate];
             } else {
-                m_good = Hypothesis();
+                m_good = NoteHypothesis();
             }
         }
 
         // reap rejected/expired hypotheses from possible list
         Hypotheses toReap = m_possible;
         m_possible.clear();
-        for (int i = 0; i < toReap.size(); ++i) {
-            Hypothesis h = toReap[i];
-            if (h.getState() != Hypothesis::Rejected && 
-                h.getState() != Hypothesis::Expired) {
+        for (int i = 0; i < (int)toReap.size(); ++i) {
+            NoteHypothesis h = toReap[i];
+            if (h.getState() != NoteHypothesis::Rejected && 
+                h.getState() != NoteHypothesis::Expired) {
                 m_possible.push_back(h);
             }
         }
@@ -639,7 +477,7 @@ CepstralPitchTracker::FeatureSet
 CepstralPitchTracker::getRemainingFeatures()
 {
     FeatureSet fs;
-    if (m_good.getState() == Hypothesis::Satisfied) {
+    if (m_good.getState() == NoteHypothesis::Satisfied) {
         addFeaturesFrom(m_good, fs);
     }
     return fs;
