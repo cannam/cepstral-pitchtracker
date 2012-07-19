@@ -18,6 +18,8 @@ SOURCES := CepstralPitchTracker.cpp \
 OBJECTS := $(SOURCES:.cpp=.o)
 OBJECTS := $(OBJECTS:.c=.o)
 
+all: $(PLUGIN)
+
 $(PLUGIN):	$(OBJECTS)
 		$(CXX) -o $@ $^ $(LDFLAGS)
 
