@@ -59,13 +59,13 @@ CepstralPitchTracker::~CepstralPitchTracker()
 string
 CepstralPitchTracker::getIdentifier() const
 {
-    return "cepstrum-pitch";
+    return "cepstral-pitchtracker";
 }
 
 string
 CepstralPitchTracker::getName() const
 {
-    return "Cepstrum Pitch Tracker";
+    return "Cepstral Pitch Tracker";
 }
 
 string
@@ -415,7 +415,7 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
     if (nextPeakVal != 0.0) {
         confidence = (maxval - nextPeakVal) * 10.0;
         if (magmean < threshold) confidence = 0.0;
-        std::cerr << "magmean = " << magmean << ", confidence = " << confidence << std::endl;
+//        std::cerr << "magmean = " << magmean << ", confidence = " << confidence << std::endl;
     }
 
     NoteHypothesis::Estimate e;

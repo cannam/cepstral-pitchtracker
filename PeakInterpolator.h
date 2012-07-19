@@ -22,22 +22,21 @@
     WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <vamp/vamp.h>
-#include <vamp-sdk/PluginAdapter.h>
+#ifndef _PEAK_INTERPOLATOR_H_
+#define _PEAK_INTERPOLATOR_H_
 
-#include "CepstralPitchTracker.h"
-
-static Vamp::PluginAdapter<CepstralPitchTracker> cepitchPluginAdapter;
-
-const VampPluginDescriptor *
-vampGetPluginDescriptor(unsigned int version, unsigned int index)
+class PeakInterpolator
 {
-    if (version < 1) return 0;
+public:
+    PeakInterpolator() { } 
+    ~PeakInterpolator() { }
 
-    switch (index) {
-    case  0: return cepitchPluginAdapter.getDescriptor();
-    default: return 0;
-    }
-}
+    /**
+     * Return the interpolated location (i.e. between sample point
+     * indices) of the peak whose sample is found at peakIndex in a
+     * series of size samples.
+     */
+    double findPeakLocation(const double *data, int size, int peakIndex);
+};
 
-
+#endif

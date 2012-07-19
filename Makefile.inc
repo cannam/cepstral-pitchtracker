@@ -6,13 +6,15 @@ CC	?= gcc
 
 CFLAGS		:= $(CFLAGS) 
 CXXFLAGS	:= $(CXXFLAGS) 
-LDFLAGS		:= $(LDFLAGS)
+LDFLAGS		:= $(LDFLAGS) -lvamp-sdk
 
 HEADERS := CepstralPitchTracker.h \
-	   NoteHypothesis.h
+	   NoteHypothesis.h \
+	   PeakInterpolator.h
 
 SOURCES := CepstralPitchTracker.cpp \
 	   NoteHypothesis.cpp \
+	   PeakInterpolator.cpp \
            libmain.cpp
 
 OBJECTS := $(SOURCES:.cpp=.o)
@@ -22,12 +24,17 @@ all: $(PLUGIN)
 
 $(PLUGIN):	$(OBJECTS)
 		$(CXX) -o $@ $^ $(LDFLAGS)
+		$(MAKE) -C test
 
 clean:		
-		rm $(OBJECTS)
+		rm -f $(OBJECTS)
+		$(MAKE) -C test clean
 
 distclean:	clean
-		rm $(PLUGIN)
+		rm -f $(PLUGIN)
+		$(MAKE) -C test distclean
 
 libmain.o:	$(HEADERS) $(SOURCES)
-SimpleCepstrum.o:	$(HEADERS) $(SOURCES)
+CepstralPitchTracker.o:	$(HEADERS) $(SOURCES)
+NoteHypothesis.o:	$(HEADERS) $(SOURCES)
+PeakInterpolator.o:	$(HEADERS) $(SOURCES)
