@@ -1,5 +1,7 @@
 /* -*- c-basic-offset: 4 indent-tabs-mode: nil -*-  vi:set ts=8 sts=4 sw=4: */
 /*
+    This file is Copyright (c) 2012 Chris Cannam
+  
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
     files (the "Software"), to deal in the Software without
@@ -20,7 +22,7 @@
     WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "CepstrumPitchTracker.h"
+#include "CepstralPitchTracker.h"
 
 #include "vamp-sdk/FFT.h"
 
@@ -35,17 +37,17 @@ using std::string;
 using std::vector;
 using Vamp::RealTime;
 
-CepstrumPitchTracker::Hypothesis::Hypothesis()
+CepstralPitchTracker::Hypothesis::Hypothesis()
 {
     m_state = New;
 }
 
-CepstrumPitchTracker::Hypothesis::~Hypothesis()
+CepstralPitchTracker::Hypothesis::~Hypothesis()
 {
 }
 
 bool
-CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s) const
+CepstralPitchTracker::Hypothesis::isWithinTolerance(Estimate s) const
 {
     if (m_pending.empty()) {
         return true;
@@ -68,7 +70,7 @@ CepstrumPitchTracker::Hypothesis::isWithinTolerance(Estimate s) const
 }
 
 bool
-CepstrumPitchTracker::Hypothesis::isOutOfDateFor(Estimate s) const
+CepstralPitchTracker::Hypothesis::isOutOfDateFor(Estimate s) const
 {
     if (m_pending.empty()) return false;
 
@@ -77,7 +79,7 @@ CepstrumPitchTracker::Hypothesis::isOutOfDateFor(Estimate s) const
 }
 
 bool 
-CepstrumPitchTracker::Hypothesis::isSatisfied() const
+CepstralPitchTracker::Hypothesis::isSatisfied() const
 {
     if (m_pending.empty()) return false;
     
@@ -96,7 +98,7 @@ CepstrumPitchTracker::Hypothesis::isSatisfied() const
 }
 
 bool
-CepstrumPitchTracker::Hypothesis::accept(Estimate s)
+CepstralPitchTracker::Hypothesis::accept(Estimate s)
 {
     bool accept = false;
 
@@ -140,14 +142,14 @@ CepstrumPitchTracker::Hypothesis::accept(Estimate s)
     return accept;
 }        
 
-CepstrumPitchTracker::Hypothesis::State
-CepstrumPitchTracker::Hypothesis::getState() const
+CepstralPitchTracker::Hypothesis::State
+CepstralPitchTracker::Hypothesis::getState() const
 {
     return m_state;
 }
 
-CepstrumPitchTracker::Hypothesis::Estimates
-CepstrumPitchTracker::Hypothesis::getAcceptedEstimates() const
+CepstralPitchTracker::Hypothesis::Estimates
+CepstralPitchTracker::Hypothesis::getAcceptedEstimates() const
 {
     if (m_state == Satisfied || m_state == Expired) {
         return m_pending;
@@ -157,7 +159,7 @@ CepstrumPitchTracker::Hypothesis::getAcceptedEstimates() const
 }
 
 double
-CepstrumPitchTracker::Hypothesis::getMeanFrequency() const
+CepstralPitchTracker::Hypothesis::getMeanFrequency() const
 {
     double acc = 0.0;
     for (int i = 0; i < m_pending.size(); ++i) {
@@ -167,8 +169,8 @@ CepstrumPitchTracker::Hypothesis::getMeanFrequency() const
     return acc;
 }
 
-CepstrumPitchTracker::Hypothesis::Note
-CepstrumPitchTracker::Hypothesis::getAveragedNote() const
+CepstralPitchTracker::Hypothesis::Note
+CepstralPitchTracker::Hypothesis::getAveragedNote() const
 {
     Note n;
 
@@ -191,7 +193,7 @@ CepstrumPitchTracker::Hypothesis::getAveragedNote() const
     return n;
 }
 
-CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
+CepstralPitchTracker::CepstralPitchTracker(float inputSampleRate) :
     Plugin(inputSampleRate),
     m_channels(0),
     m_stepSize(256),
@@ -205,36 +207,36 @@ CepstrumPitchTracker::CepstrumPitchTracker(float inputSampleRate) :
 {
 }
 
-CepstrumPitchTracker::~CepstrumPitchTracker()
+CepstralPitchTracker::~CepstralPitchTracker()
 {
 }
 
 string
-CepstrumPitchTracker::getIdentifier() const
+CepstralPitchTracker::getIdentifier() const
 {
     return "cepstrum-pitch";
 }
 
 string
-CepstrumPitchTracker::getName() const
+CepstralPitchTracker::getName() const
 {
     return "Cepstrum Pitch Tracker";
 }
 
 string
-CepstrumPitchTracker::getDescription() const
+CepstralPitchTracker::getDescription() const
 {
     return "Estimate f0 of monophonic material using a cepstrum method.";
 }
 
 string
-CepstrumPitchTracker::getMaker() const
+CepstralPitchTracker::getMaker() const
 {
     return "Chris Cannam";
 }
 
 int
-CepstrumPitchTracker::getPluginVersion() const
+CepstralPitchTracker::getPluginVersion() const
 {
     // Increment this each time you release a version that behaves
     // differently from the previous one
@@ -242,79 +244,79 @@ CepstrumPitchTracker::getPluginVersion() const
 }
 
 string
-CepstrumPitchTracker::getCopyright() const
+CepstralPitchTracker::getCopyright() const
 {
     return "Freely redistributable (BSD license)";
 }
 
-CepstrumPitchTracker::InputDomain
-CepstrumPitchTracker::getInputDomain() const
+CepstralPitchTracker::InputDomain
+CepstralPitchTracker::getInputDomain() const
 {
     return FrequencyDomain;
 }
 
 size_t
-CepstrumPitchTracker::getPreferredBlockSize() const
+CepstralPitchTracker::getPreferredBlockSize() const
 {
     return 1024;
 }
 
 size_t 
-CepstrumPitchTracker::getPreferredStepSize() const
+CepstralPitchTracker::getPreferredStepSize() const
 {
     return 256;
 }
 
 size_t
-CepstrumPitchTracker::getMinChannelCount() const
+CepstralPitchTracker::getMinChannelCount() const
 {
     return 1;
 }
 
 size_t
-CepstrumPitchTracker::getMaxChannelCount() const
+CepstralPitchTracker::getMaxChannelCount() const
 {
     return 1;
 }
 
-CepstrumPitchTracker::ParameterList
-CepstrumPitchTracker::getParameterDescriptors() const
+CepstralPitchTracker::ParameterList
+CepstralPitchTracker::getParameterDescriptors() const
 {
     ParameterList list;
     return list;
 }
 
 float
-CepstrumPitchTracker::getParameter(string identifier) const
+CepstralPitchTracker::getParameter(string identifier) const
 {
     return 0.f;
 }
 
 void
-CepstrumPitchTracker::setParameter(string identifier, float value) 
+CepstralPitchTracker::setParameter(string identifier, float value) 
 {
 }
 
-CepstrumPitchTracker::ProgramList
-CepstrumPitchTracker::getPrograms() const
+CepstralPitchTracker::ProgramList
+CepstralPitchTracker::getPrograms() const
 {
     ProgramList list;
     return list;
 }
 
 string
-CepstrumPitchTracker::getCurrentProgram() const
+CepstralPitchTracker::getCurrentProgram() const
 {
     return ""; // no programs
 }
 
 void
-CepstrumPitchTracker::selectProgram(string name)
+CepstralPitchTracker::selectProgram(string name)
 {
 }
 
-CepstrumPitchTracker::OutputList
-CepstrumPitchTracker::getOutputDescriptors() const
+CepstralPitchTracker::OutputList
+CepstralPitchTracker::getOutputDescriptors() const
 {
     OutputList outputs;
 
@@ -356,12 +358,12 @@ CepstrumPitchTracker::getOutputDescriptors() const
 }
 
 bool
-CepstrumPitchTracker::initialise(size_t channels, size_t stepSize, size_t blockSize)
+CepstralPitchTracker::initialise(size_t channels, size_t stepSize, size_t blockSize)
 {
     if (channels < getMinChannelCount() ||
 	channels > getMaxChannelCount()) return false;
 
-//    std::cerr << "CepstrumPitchTracker::initialise: channels = " << channels
+//    std::cerr << "CepstralPitchTracker::initialise: channels = " << channels
 //	      << ", stepSize = " << stepSize << ", blockSize = " << blockSize
 //	      << std::endl;
 
@@ -384,12 +386,12 @@ CepstrumPitchTracker::initialise(size_t channels, size_t stepSize, size_t blockS
 }
 
 void
-CepstrumPitchTracker::reset()
+CepstralPitchTracker::reset()
 {
 }
 
 void
-CepstrumPitchTracker::addFeaturesFrom(Hypothesis h, FeatureSet &fs)
+CepstralPitchTracker::addFeaturesFrom(Hypothesis h, FeatureSet &fs)
 {
     Hypothesis::Estimates es = h.getAcceptedEstimates();
 
@@ -412,7 +414,7 @@ CepstrumPitchTracker::addFeaturesFrom(Hypothesis h, FeatureSet &fs)
 }
 
 void
-CepstrumPitchTracker::filter(const double *cep, double *data)
+CepstralPitchTracker::filter(const double *cep, double *data)
 {
     for (int i = 0; i < m_bins; ++i) {
         double v = 0;
@@ -430,7 +432,7 @@ CepstrumPitchTracker::filter(const double *cep, double *data)
 }
 
 double
-CepstrumPitchTracker::cubicInterpolate(const double y[4], double x)
+CepstralPitchTracker::cubicInterpolate(const double y[4], double x)
 {
     double a0 = y[3] - y[2] - y[0] + y[1];
     double a1 = y[0] - y[1] - a0;
@@ -444,7 +446,7 @@ CepstrumPitchTracker::cubicInterpolate(const double y[4], double x)
 }
 
 double
-CepstrumPitchTracker::findInterpolatedPeak(const double *in, int maxbin)
+CepstralPitchTracker::findInterpolatedPeak(const double *in, int maxbin)
 {
     if (maxbin < 2 || maxbin > m_bins - 3) {
         return maxbin;
@@ -494,8 +496,8 @@ CepstrumPitchTracker::findInterpolatedPeak(const double *in, int maxbin)
     return maxidx;
 }
 
-CepstrumPitchTracker::FeatureSet
-CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timestamp)
+CepstralPitchTracker::FeatureSet
+CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timestamp)
 {
     FeatureSet fs;
 
@@ -633,8 +635,8 @@ CepstrumPitchTracker::process(const float *const *inputBuffers, RealTime timesta
     return fs;
 }
 
-CepstrumPitchTracker::FeatureSet
-CepstrumPitchTracker::getRemainingFeatures()
+CepstralPitchTracker::FeatureSet
+CepstralPitchTracker::getRemainingFeatures()
 {
     FeatureSet fs;
     if (m_good.getState() == Hypothesis::Satisfied) {

@@ -1,5 +1,7 @@
 /* -*- c-basic-offset: 4 indent-tabs-mode: nil -*-  vi:set ts=8 sts=4 sw=4: */
 /*
+    This file is Copyright (c) 2012 Chris Cannam
+  
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
     files (the "Software"), to deal in the Software without
@@ -25,11 +27,11 @@
 
 #include <vamp-sdk/Plugin.h>
 
-class CepstrumPitchTracker : public Vamp::Plugin
+class CepstralPitchTracker : public Vamp::Plugin
 {
 public:
-    CepstrumPitchTracker(float inputSampleRate);
-    virtual ~CepstrumPitchTracker();
+    CepstralPitchTracker(float inputSampleRate);
+    virtual ~CepstralPitchTracker();
 
     std::string getIdentifier() const;
     std::string getName() const;

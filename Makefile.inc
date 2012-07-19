@@ -1,6 +1,6 @@
 
 PLUGIN_EXT	?= .so
-PLUGIN	?= simple-cepstrum$(PLUGIN_EXT)
+PLUGIN	?= cepstral-pitchtracker$(PLUGIN_EXT)
 CXX	?= g++
 CC	?= gcc
 
@@ -8,11 +8,9 @@ CFLAGS		:= $(CFLAGS)
 CXXFLAGS	:= $(CXXFLAGS) 
 LDFLAGS		:= $(LDFLAGS)
 
-HEADERS := SimpleCepstrum.h \
-	   CepstrumPitchTracker.h
+HEADERS := CepstralPitchTracker.h
 
-SOURCES := SimpleCepstrum.cpp \
-	   CepstrumPitchTracker.cpp \
+SOURCES := CepstralPitchTracker.cpp \
            libmain.cpp
 
 OBJECTS := $(SOURCES:.cpp=.o)
