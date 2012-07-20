@@ -24,6 +24,8 @@
 
 #include "PeakInterpolator.h"
 
+#include <iostream>
+
 static double cubicInterpolate(const double y[4], double x)
 {
     double a0 = y[3] - y[2] - y[0] + y[1];
@@ -40,7 +42,10 @@ static double cubicInterpolate(const double y[4], double x)
 double
 PeakInterpolator::findPeakLocation(const double *data, int size, int peakIndex)
 {
-    if (peakIndex < 2 || peakIndex > size - 3) {
+    std::cerr << "findPeakLocation: size " << size << ", peakIndex " << peakIndex << std::endl;
+
+    if (peakIndex < 1 || peakIndex > size - 2) {
+        std::cerr << "returning " << peakIndex << ", data too short" << std::endl;
         return peakIndex;
     }
 
@@ -53,10 +58,16 @@ PeakInterpolator::findPeakLocation(const double *data, int size, int peakIndex)
     y[0] = data[peakIndex-1];
     y[1] = data[peakIndex];
     y[2] = data[peakIndex+1];
-    y[3] = data[peakIndex+2];
+    if (peakIndex < size - 2) {
+        y[3] = data[peakIndex+2];
+    } else {
+        y[3] = y[2];
+    }
+    std::cerr << "a y: " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << std::endl;
     for (int i = 0; i < divisions; ++i) {
         double probe = double(i) / double(divisions);
         double value = cubicInterpolate(y, probe);
+        std::cerr << "probe = " << probe << ", value = " << value << " for location " << peakIndex + probe << std::endl;
         if (value > maxval) {
             maxval = value; 
             location = peakIndex + probe;
@@ -66,15 +77,23 @@ PeakInterpolator::findPeakLocation(const double *data, int size, int peakIndex)
     y[3] = y[2];
     y[2] = y[1];
     y[1] = y[0];
-    y[0] = data[peakIndex-2];
+    if (peakIndex > 1) {
+        y[0] = data[peakIndex-2];
+    } else {
+        y[0] = y[1];
+    }
+    std::cerr << "b y: " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << std::endl;
     for (int i = 0; i < divisions; ++i) {
         double probe = double(i) / double(divisions);
         double value = cubicInterpolate(y, probe);
+        std::cerr << "probe = " << probe << ", value = " << value << " for location " << peakIndex - 1 + probe << std::endl;
         if (value > maxval) {
             maxval = value; 
             location = peakIndex - 1 + probe;
         }
     }
+
+    std::cerr << "returning " << location << std::endl;
 
     return location;
 }

@@ -39,16 +39,6 @@ BOOST_AUTO_TEST_CASE(peakAtSample_N3)
     BOOST_CHECK_EQUAL(result, 1.0);
 }
 
-BOOST_AUTO_TEST_CASE(peakAtSample_N4)
-{
-    double data[] = { 0.0, 1.0, 2.0, 0.0 };
-    PeakInterpolator p;
-    double result = p.findPeakLocation(data, 4, 2);
-    //!!! Actually, this isn't certain at all I think? It could quite
-    //!!! reasonably be smaller than 2.0
-    BOOST_CHECK_EQUAL(result, 2.0);
-}
-
 BOOST_AUTO_TEST_CASE(peakAtSample_N5)
 {
     double data[] = { 0.0, 1.0, 2.0, 1.0, 0.0 };
@@ -71,6 +61,41 @@ BOOST_AUTO_TEST_CASE(multiPeak)
     PeakInterpolator p;
     double result = p.findPeakLocation(data, 5, 3);
     BOOST_CHECK_EQUAL(result, 3.0);
+}
+
+BOOST_AUTO_TEST_CASE(start)
+{
+    // Can't meaningfully interpolate if we're identifying element 0
+    // as the peak
+    double data[] = { 1.0, 1.0, 0.0, 0.0 };
+    PeakInterpolator p;
+    double result = p.findPeakLocation(data, 4, 0);
+    BOOST_CHECK_EQUAL(result, 0.0);
+}
+
+BOOST_AUTO_TEST_CASE(end)
+{
+    // Likewise for the final element
+    double data[] = { 0.0, 0.0, 1.0, 1.0 };
+    PeakInterpolator p;
+    double result = p.findPeakLocation(data, 4, 3);
+    BOOST_CHECK_EQUAL(result, 3.0);
+}
+
+BOOST_AUTO_TEST_CASE(longHalfway)
+{
+    double data[] = { 1.0, 1.0, 1.0, 2.0, 2.0, 1.0, 1.0, 1.0 };
+    PeakInterpolator p;
+    double result = p.findPeakLocation(data, 8, 4);
+    BOOST_CHECK_EQUAL(result, 3.5);
+}
+
+BOOST_AUTO_TEST_CASE(shortHalfway)
+{
+    double data[] = { 1.0, 2.0, 2.0, 1.0 };
+    PeakInterpolator p;
+    double result = p.findPeakLocation(data, 4, 1);
+    BOOST_CHECK_EQUAL(result, 1.5);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
