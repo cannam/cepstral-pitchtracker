@@ -32,9 +32,27 @@ public:
     ~PeakInterpolator() { }
 
     /**
+     * Return the interpolated location (i.e. possibly between sample
+     * point indices) of the peak in the given sampled range.
+     *
+     * "The peak" is defined as the (approximate) location of the
+     * maximum of a function interpolating between the points
+     * neighbouring the sample index with the maximum value in the
+     * range.
+     *
+     * If multiple local peak samples in the input range are equal,
+     * i.e. there is more than one apparent peak in the range, the one
+     * with the lowest index will be used. This is the case even if a
+     * later peak would be of superior height after interpolation.
+     */
+    double findPeakLocation(const double *data, int size);
+
+    /**
      * Return the interpolated location (i.e. between sample point
-     * indices) of the peak whose sample is found at peakIndex in a
-     * series of size samples.
+     * indices) of the peak whose nearest sample is found at peakIndex
+     * in the given sampled range. This method allows you to specify
+     * which peak to find, if local rather than global peaks are of
+     * interest.
      */
     double findPeakLocation(const double *data, int size, int peakIndex);
 };

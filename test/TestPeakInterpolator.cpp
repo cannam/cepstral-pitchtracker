@@ -37,6 +37,8 @@ BOOST_AUTO_TEST_CASE(peakAtSample_N3)
     PeakInterpolator p;
     double result = p.findPeakLocation(data, 3, 1);
     BOOST_CHECK_EQUAL(result, 1.0);
+    result = p.findPeakLocation(data, 3);
+    BOOST_CHECK_EQUAL(result, 1.0);
 }
 
 BOOST_AUTO_TEST_CASE(peakAtSample_N5)
@@ -44,6 +46,8 @@ BOOST_AUTO_TEST_CASE(peakAtSample_N5)
     double data[] = { 0.0, 1.0, 2.0, 1.0, 0.0 };
     PeakInterpolator p;
     double result = p.findPeakLocation(data, 5, 2);
+    BOOST_CHECK_EQUAL(result, 2.0);
+    result = p.findPeakLocation(data, 5);
     BOOST_CHECK_EQUAL(result, 2.0);
 }
 
@@ -53,6 +57,8 @@ BOOST_AUTO_TEST_CASE(flat)
     PeakInterpolator p;
     double result = p.findPeakLocation(data, 5, 2);
     BOOST_CHECK_EQUAL(result, 2.0);
+    result = p.findPeakLocation(data, 5);
+    BOOST_CHECK_EQUAL(result, 0.0);
 }
 
 BOOST_AUTO_TEST_CASE(multiPeak)
@@ -61,6 +67,8 @@ BOOST_AUTO_TEST_CASE(multiPeak)
     PeakInterpolator p;
     double result = p.findPeakLocation(data, 5, 3);
     BOOST_CHECK_EQUAL(result, 3.0);
+    result = p.findPeakLocation(data, 5);
+    BOOST_CHECK_EQUAL(result, 1.0);
 }
 
 BOOST_AUTO_TEST_CASE(start)
@@ -80,6 +88,10 @@ BOOST_AUTO_TEST_CASE(end)
     PeakInterpolator p;
     double result = p.findPeakLocation(data, 4, 3);
     BOOST_CHECK_EQUAL(result, 3.0);
+    // But when running without a peak location, we expect idx 2 to be
+    // picked as peak, not idx 3, so that will result in interpolation
+    result = p.findPeakLocation(data, 4);
+    BOOST_CHECK(result > 2.0 && result < 3.0);
 }
 
 BOOST_AUTO_TEST_CASE(longHalfway)
@@ -87,6 +99,8 @@ BOOST_AUTO_TEST_CASE(longHalfway)
     double data[] = { 1.0, 1.0, 1.0, 2.0, 2.0, 1.0, 1.0, 1.0 };
     PeakInterpolator p;
     double result = p.findPeakLocation(data, 8, 4);
+    BOOST_CHECK_EQUAL(result, 3.5);
+    result = p.findPeakLocation(data, 8);
     BOOST_CHECK_EQUAL(result, 3.5);
 }
 
@@ -96,6 +110,8 @@ BOOST_AUTO_TEST_CASE(shortHalfway)
     PeakInterpolator p;
     double result = p.findPeakLocation(data, 4, 1);
     BOOST_CHECK_EQUAL(result, 1.5);
+    result = p.findPeakLocation(data, 4);
+    BOOST_CHECK_EQUAL(result, 1.5);
 }
 
 BOOST_AUTO_TEST_CASE(aboveHalfway)
@@ -104,6 +120,8 @@ BOOST_AUTO_TEST_CASE(aboveHalfway)
     PeakInterpolator p;
     double result = p.findPeakLocation(data, 4, 2);
     BOOST_CHECK(result > 1.5 && result < 2.0);
+    result = p.findPeakLocation(data, 4);
+    BOOST_CHECK(result > 1.5 && result < 2.0);
 }
 
 BOOST_AUTO_TEST_CASE(belowHalfway)
@@ -111,6 +129,8 @@ BOOST_AUTO_TEST_CASE(belowHalfway)
     double data[] = { 1.0, 2.0, 1.5, 1.0 };
     PeakInterpolator p;
     double result = p.findPeakLocation(data, 4, 1);
+    BOOST_CHECK(result > 1.0 && result < 1.5);
+    result = p.findPeakLocation(data, 4);
     BOOST_CHECK(result > 1.0 && result < 1.5);
 }
 
