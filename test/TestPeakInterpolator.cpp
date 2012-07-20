@@ -98,5 +98,21 @@ BOOST_AUTO_TEST_CASE(shortHalfway)
     BOOST_CHECK_EQUAL(result, 1.5);
 }
 
+BOOST_AUTO_TEST_CASE(aboveHalfway)
+{
+    double data[] = { 1.0, 1.5, 2.0, 1.0 };
+    PeakInterpolator p;
+    double result = p.findPeakLocation(data, 4, 2);
+    BOOST_CHECK(result > 1.5 && result < 2.0);
+}
+
+BOOST_AUTO_TEST_CASE(belowHalfway)
+{
+    double data[] = { 1.0, 2.0, 1.5, 1.0 };
+    PeakInterpolator p;
+    double result = p.findPeakLocation(data, 4, 1);
+    BOOST_CHECK(result > 1.0 && result < 1.5);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -1,12 +1,17 @@
 
 PLUGIN_EXT	?= .so
-PLUGIN	?= cepstral-pitchtracker$(PLUGIN_EXT)
+
 CXX	?= g++
 CC	?= gcc
 
-CFLAGS		:= $(CFLAGS) 
-CXXFLAGS	:= $(CXXFLAGS) 
-LDFLAGS		:= $(LDFLAGS) -lvamp-sdk
+CFLAGS := $(CFLAGS) 
+CXXFLAGS := -I. $(CXXFLAGS)
+
+LDFLAGS := $(LDFLAGS) -lvamp-sdk
+PLUGIN_LDFLAGS := $(LDFLAGS) $(PLUGIN_LDFLAGS)
+TEST_LDFLAGS := $(LDFLAGS) -lboost_unit_test_framework
+
+PLUGIN := cepstral-pitchtracker$(PLUGIN_EXT)
 
 HEADERS := CepstralPitchTracker.h \
 	   NoteHypothesis.h \
@@ -14,27 +19,41 @@ HEADERS := CepstralPitchTracker.h \
 
 SOURCES := CepstralPitchTracker.cpp \
 	   NoteHypothesis.cpp \
-	   PeakInterpolator.cpp \
-           libmain.cpp
+	   PeakInterpolator.cpp
+
+PLUGIN_MAIN := libmain.cpp
+
+TESTS := test/test-notehypothesis \
+         test/test-peakinterpolator
 
 OBJECTS := $(SOURCES:.cpp=.o)
 OBJECTS := $(OBJECTS:.c=.o)
 
-all: $(PLUGIN)
+PLUGIN_OBJECTS := $(OBJECTS) $(PLUGIN_MAIN:.cpp=.o)
 
-$(PLUGIN):	$(OBJECTS)
-		$(CXX) -o $@ $^ $(LDFLAGS)
-		$(MAKE) -C test
+all: $(PLUGIN) $(TESTS)
+	for t in $(TESTS); do echo "Running $$t"; ./"$$t" || exit 1; done
+
+$(PLUGIN): $(PLUGIN_OBJECTS)
+	$(CXX) -o $@ $^ $(PLUGIN_LDFLAGS)
+
+test/test-notehypothesis: test/TestNoteHypothesis.o $(OBJECTS)
+	$(CXX) -o $@ $^ $(TEST_LDFLAGS)
+
+test/test-peakinterpolator: test/TestPeakInterpolator.o $(OBJECTS)
+	$(CXX) -o $@ $^ $(TEST_LDFLAGS)
 
 clean:		
-		rm -f $(OBJECTS)
-		$(MAKE) -C test clean
+		rm -f $(OBJECTS) test/*.o
 
 distclean:	clean
-		rm -f $(PLUGIN)
-		$(MAKE) -C test distclean
+		rm -f $(PLUGIN) $(TESTS)
 
-libmain.o:	$(HEADERS) $(SOURCES)
-CepstralPitchTracker.o:	$(HEADERS) $(SOURCES)
-NoteHypothesis.o:	$(HEADERS) $(SOURCES)
-PeakInterpolator.o:	$(HEADERS) $(SOURCES)
+# DO NOT DELETE
+
+CepstralPitchTracker.o: CepstralPitchTracker.h NoteHypothesis.h
+libmain.o: CepstralPitchTracker.h NoteHypothesis.h
+NoteHypothesis.o: NoteHypothesis.h
+PeakInterpolator.o: PeakInterpolator.h
+test/TestNoteHypothesis.o: NoteHypothesis.h
+test/TestPeakInterpolator.o: PeakInterpolator.h
