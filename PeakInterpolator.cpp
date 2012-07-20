@@ -26,19 +26,6 @@
 
 #include <iostream>
 
-static double cubicInterpolate(const double y[4], double x)
-{
-    double a0 = y[3] - y[2] - y[0] + y[1];
-    double a1 = y[0] - y[1] - a0;
-    double a2 = y[2] - y[0];
-    double a3 = y[1];
-    return
-        a0 * x * x * x +
-        a1 * x * x +
-        a2 * x +
-        a3;
-}
-
 double
 PeakInterpolator::findPeakLocation(const double *data, int size)
 {
