@@ -57,59 +57,26 @@ PeakInterpolator::findPeakLocation(const double *data, int size)
 double
 PeakInterpolator::findPeakLocation(const double *data, int size, int peakIndex)
 {
-//    std::cerr << "findPeakLocation: size " << size << ", peakIndex " << peakIndex << std::endl;
+    // after jos, 
+    // https://ccrma.stanford.edu/~jos/sasp/Quadratic_Interpolation_Spectral_Peaks.html
 
     if (peakIndex < 1 || peakIndex > size - 2) {
-//        std::cerr << "returning " << peakIndex << ", data too short" << std::endl;
         return peakIndex;
     }
 
-    double maxval = 0.0;
-    double location = peakIndex;
+    double alpha = data[peakIndex-1];
+    double beta  = data[peakIndex];
+    double gamma = data[peakIndex+1];
 
-    const int divisions = 10;
-    double y[4];
+    double denom = (alpha - 2*beta + gamma);
 
-    y[0] = data[peakIndex-1];
-    y[1] = data[peakIndex];
-    y[2] = data[peakIndex+1];
-    if (peakIndex < size - 2) {
-        y[3] = data[peakIndex+2];
-    } else {
-        y[3] = y[2];
-    }
-//    std::cerr << "a y: " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << std::endl;
-    for (int i = 0; i < divisions; ++i) {
-        double probe = double(i) / double(divisions);
-        double value = cubicInterpolate(y, probe);
-//        std::cerr << "probe = " << probe << ", value = " << value << " for location " << peakIndex + probe << std::endl;
-        if (value > maxval) {
-            maxval = value; 
-            location = peakIndex + probe;
-        }
+    if (denom == 0) {
+        // flat
+        return peakIndex;
     }
 
-    y[3] = y[2];
-    y[2] = y[1];
-    y[1] = y[0];
-    if (peakIndex > 1) {
-        y[0] = data[peakIndex-2];
-    } else {
-        y[0] = y[1];
-    }
-//    std::cerr << "b y: " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << std::endl;
-    for (int i = 0; i < divisions; ++i) {
-        double probe = double(i) / double(divisions);
-        double value = cubicInterpolate(y, probe);
-//        std::cerr << "probe = " << probe << ", value = " << value << " for location " << peakIndex - 1 + probe << std::endl;
-        if (value > maxval) {
-            maxval = value; 
-            location = peakIndex - 1 + probe;
-        }
-    }
+    double p = ((alpha - gamma) / denom) / 2.0;
 
-//    std::cerr << "returning " << location << std::endl;
-
-    return location;
+    return double(peakIndex) + p;
 }
 
