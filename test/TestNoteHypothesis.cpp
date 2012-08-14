@@ -53,15 +53,57 @@ BOOST_AUTO_TEST_SUITE(TestNoteHypothesis)
 
 BOOST_AUTO_TEST_CASE(emptyAccept)
 {
+    // An empty hypothesis should accept any estimate and enter
+    // provisional state
     NoteHypothesis h;
     NoteHypothesis::Estimate e;
     BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::New);
     BOOST_CHECK(h.accept(e));
     BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Provisional);
 }
+		
+BOOST_AUTO_TEST_CASE(tooSlow)
+{
+    // Having accepted a first estimate, a hypothesis should reject a
+    // second (and enter rejected state) if there is too long a gap
+    // between them for them to belong to a single note
+    NoteHypothesis h;
+    NoteHypothesis::Estimate e1(500, RealTime::fromMilliseconds(0), 1);
+    NoteHypothesis::Estimate e2(500, RealTime::fromMilliseconds(50), 1);
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::New);
+    BOOST_CHECK(h.accept(e1));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Provisional);
+    BOOST_CHECK(!h.accept(e2));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Rejected);
+}
 
 BOOST_AUTO_TEST_CASE(simpleSatisfy)
 {
+    // A hypothesis should enter satisfied state after accepting three
+    // consistent estimates, and then remain satisfied while accepting
+    // further consistent estimates
+    NoteHypothesis h;
+    NoteHypothesis::Estimate e1(500, RealTime::fromMilliseconds(0), 1);
+    NoteHypothesis::Estimate e2(500, RealTime::fromMilliseconds(10), 1);
+    NoteHypothesis::Estimate e3(500, RealTime::fromMilliseconds(20), 1);
+    NoteHypothesis::Estimate e4(500, RealTime::fromMilliseconds(30), 1);
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::New);
+    BOOST_CHECK(h.accept(e1));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Provisional);
+    BOOST_CHECK(h.accept(e2));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Provisional);
+    BOOST_CHECK(h.accept(e3));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Satisfied);
+    BOOST_CHECK(h.accept(e4));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Satisfied);
+}
+
+BOOST_AUTO_TEST_CASE(expiry)
+{
+    // A hypothesis that has been satisfied, but that is subsequently
+    // offered an estimate that follows too long a gap, should enter
+    // expired state rather than rejected state (showing that it has a
+    // valid note but that the note has apparently finished)
     NoteHypothesis h;
     NoteHypothesis::Estimate e1(500, RealTime::fromMilliseconds(0), 1);
     NoteHypothesis::Estimate e2(500, RealTime::fromMilliseconds(10), 1);
@@ -84,8 +126,10 @@ BOOST_AUTO_TEST_CASE(simpleSatisfy)
     BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Expired);
 }
 	
-BOOST_AUTO_TEST_CASE(strayReject)
+BOOST_AUTO_TEST_CASE(strayReject1)
 {
+    // A wildly different frequency occurring in the middle of a
+    // provisionally accepted note should be ignored
     NoteHypothesis h;
     NoteHypothesis::Estimate e1(500, RealTime::fromMilliseconds(0), 1);
     NoteHypothesis::Estimate e2(1000, RealTime::fromMilliseconds(10), 1);
@@ -101,21 +145,34 @@ BOOST_AUTO_TEST_CASE(strayReject)
     BOOST_CHECK(h.accept(e4));
     BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Satisfied);
 }
-		
-BOOST_AUTO_TEST_CASE(tooSlow)
+
+BOOST_AUTO_TEST_CASE(strayReject2)
 {
+    // A wildly different frequency occurring in the middle of a
+    // satisfied note should be ignored
     NoteHypothesis h;
     NoteHypothesis::Estimate e1(500, RealTime::fromMilliseconds(0), 1);
-    NoteHypothesis::Estimate e2(500, RealTime::fromMilliseconds(50), 1);
+    NoteHypothesis::Estimate e2(500, RealTime::fromMilliseconds(10), 1);
+    NoteHypothesis::Estimate e3(500, RealTime::fromMilliseconds(20), 1);
+    NoteHypothesis::Estimate e4(1000, RealTime::fromMilliseconds(30), 1);
+    NoteHypothesis::Estimate e5(500, RealTime::fromMilliseconds(40), 1);
     BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::New);
     BOOST_CHECK(h.accept(e1));
     BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Provisional);
-    BOOST_CHECK(!h.accept(e2));
-    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Rejected);
+    BOOST_CHECK(h.accept(e2));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Provisional);
+    BOOST_CHECK(h.accept(e3));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Satisfied);
+    BOOST_CHECK(!h.accept(e4));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Satisfied);
+    BOOST_CHECK(h.accept(e5));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Satisfied);
 }
 	
 BOOST_AUTO_TEST_CASE(weakSatisfy)
 {
+    // Behaviour with slightly varying frequencies should be as for
+    // that with fixed frequency
     NoteHypothesis h;
     NoteHypothesis::Estimate e1(500, RealTime::fromMilliseconds(0), 0.5);
     NoteHypothesis::Estimate e2(502, RealTime::fromMilliseconds(10), 0.5);
@@ -140,6 +197,8 @@ BOOST_AUTO_TEST_CASE(weakSatisfy)
 	
 BOOST_AUTO_TEST_CASE(frequencyRange)
 {
+    // But there's a limit: outside a certain range we should reject
+    //!!! (but what is this range? is it part of the spec?)
     NoteHypothesis h;
     NoteHypothesis::Estimate e1(440, RealTime::fromMilliseconds(0), 1);
     NoteHypothesis::Estimate e2(448, RealTime::fromMilliseconds(10), 1);
@@ -158,6 +217,7 @@ BOOST_AUTO_TEST_CASE(frequencyRange)
 
 BOOST_AUTO_TEST_CASE(acceptedEstimates)
 {
+    // Check that getAcceptedEstimates() returns the right result
     NoteHypothesis h;
     NoteHypothesis::Estimate e1(440, RealTime::fromMilliseconds(0), 1);
     NoteHypothesis::Estimate e2(448, RealTime::fromMilliseconds(10), 1);
@@ -189,6 +249,7 @@ BOOST_AUTO_TEST_CASE(acceptedEstimates)
 	
 BOOST_AUTO_TEST_CASE(meanFrequency)
 {
+    // Check that the mean frequency is the mean of the frequencies
     NoteHypothesis h;
     NoteHypothesis::Estimate e1(440, RealTime::fromMilliseconds(0), 1);
     NoteHypothesis::Estimate e2(448, RealTime::fromMilliseconds(10), 1);
@@ -201,6 +262,7 @@ BOOST_AUTO_TEST_CASE(meanFrequency)
 
 BOOST_AUTO_TEST_CASE(averagedNote)
 {
+    // Check that getAveragedNote returns something sane
     NoteHypothesis h;
     NoteHypothesis::Estimate e1(440, RealTime::fromMilliseconds(10), 1);
     NoteHypothesis::Estimate e2(448, RealTime::fromMilliseconds(20), 1);
@@ -213,6 +275,8 @@ BOOST_AUTO_TEST_CASE(averagedNote)
                        RealTime::fromMilliseconds(10),
                        RealTime::fromMilliseconds(20)));
 }
+
+//!!! Not yet tested: Confidence scores
 
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -40,20 +40,20 @@ class NoteHypothesis
 public:
     enum State {
 
-	/// Just constructed, will provisionally accept any estimate
-	New,
+        /// Just constructed, will provisionally accept any estimate
+        New,
 
-	/// Accepted at least one estimate, but not enough evidence to satisfy
-	Provisional,
+        /// Accepted at least one estimate, but not enough evidence to satisfy
+        Provisional,
 
-	/// Could not find enough consistency in offered estimates
-	Rejected,
+        /// Could not find enough consistency in offered estimates
+        Rejected,
 
-	/// Have accepted enough consistent estimates to satisfy hypothesis
-	Satisfied,
+        /// Have accepted enough consistent estimates to satisfy hypothesis
+        Satisfied,
 
-	/// Have been satisfied, but evidence has now changed: we're done
-	Expired
+        /// Have been satisfied, but evidence has now changed: we're done
+        Expired
     };
     
     /**
@@ -74,9 +74,9 @@ public:
         bool operator==(const Estimate &e) const {
             return e.freq == freq && e.time == time && e.confidence == confidence;
         }
-	double freq;
+        double freq;
         Vamp::RealTime time;
-	double confidence;
+        double confidence;
     };
     typedef std::vector<Estimate> Estimates;
 
@@ -107,9 +107,9 @@ public:
         bool operator==(const Note &e) const {
             return e.freq == freq && e.time == time && e.duration == duration;
         }
-	double freq;
-	Vamp::RealTime time;
-	Vamp::RealTime duration;
+        double freq;
+        Vamp::RealTime time;
+        Vamp::RealTime duration;
     };
     
     /**
