@@ -26,6 +26,7 @@ PLUGIN_MAIN := libmain.cpp
 
 TESTS := test/test-notehypothesis \
          test/test-meanfilter \
+         test/test-fft \
          test/test-peakinterpolator
 
 OBJECTS := $(SOURCES:.cpp=.o)
@@ -43,6 +44,9 @@ test/test-notehypothesis: test/TestNoteHypothesis.o $(OBJECTS)
 	$(CXX) -o $@ $^ $(TEST_LDFLAGS)
 
 test/test-meanfilter: test/TestMeanFilter.o $(OBJECTS)
+	$(CXX) -o $@ $^ $(TEST_LDFLAGS)
+
+test/test-fft: test/TestFFT.o $(OBJECTS)
 	$(CXX) -o $@ $^ $(TEST_LDFLAGS)
 
 test/test-peakinterpolator: test/TestPeakInterpolator.o $(OBJECTS)

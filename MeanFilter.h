@@ -46,7 +46,8 @@ public:
 
     /**
      * Filter the n samples starting at the given offset in the
-     * m-element array "in" and place the results in "out"
+     * m-element array "in" and place the results in the n-element
+     * array "out"
      */
     void filterSubsequence(const double *in, double *out,
 			   const int m, const int n,
