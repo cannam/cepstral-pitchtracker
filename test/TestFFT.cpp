@@ -112,24 +112,6 @@ BOOST_AUTO_TEST_CASE(sineCosine)
     COMPARE_ARRAY(back, in);
 }
 
-BOOST_AUTO_TEST_CASE(sineCosineDC)
-{
-    // Sine and cosine mixed
-    double in[] = { 0.5, 1.0, -0.5, -1.0 };
-    double re[4], im[4];
-    Vamp::FFT::forward(4, in, 0, re, im);
-    BOOST_CHECK_EQUAL(re[0], 0.0);
-    BOOST_CHECK_CLOSE(re[1], 1.0, 1e-12);
-    BOOST_CHECK_EQUAL(re[2], 0.0);
-    BOOST_CHECK_EQUAL(im[0], 0.0);
-    BOOST_CHECK_CLOSE(im[1], -2.0, 1e-12);
-    BOOST_CHECK_EQUAL(im[2], 0.0);
-    double back[4];
-    double backim[4];
-    Vamp::FFT::inverse(4, re, im, back, backim);
-    COMPARE_ARRAY(back, in);
-}
-
 BOOST_AUTO_TEST_CASE(nyquist)
 {
     double in[] = { 1, -1, 1, -1 };

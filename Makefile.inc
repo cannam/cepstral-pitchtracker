@@ -24,11 +24,12 @@ SOURCES := CepstralPitchTracker.cpp \
 
 PLUGIN_MAIN := libmain.cpp
 
-TESTS := test/test-notehypothesis \
-         test/test-meanfilter \
+TESTS := test/test-meanfilter \
          test/test-fft \
-         test/test-peakinterpolator
-
+	 test/test-cepstrum \
+         test/test-peakinterpolator \
+	 test/test-notehypothesis
+         
 OBJECTS := $(SOURCES:.cpp=.o)
 OBJECTS := $(OBJECTS:.c=.o)
 
@@ -46,6 +47,9 @@ test/test-notehypothesis: test/TestNoteHypothesis.o $(OBJECTS)
 test/test-meanfilter: test/TestMeanFilter.o $(OBJECTS)
 	$(CXX) -o $@ $^ $(TEST_LDFLAGS)
 
+test/test-cepstrum: test/TestCepstrum.o $(OBJECTS)
+	$(CXX) -o $@ $^ $(TEST_LDFLAGS)
+
 test/test-fft: test/TestFFT.o $(OBJECTS)
 	$(CXX) -o $@ $^ $(TEST_LDFLAGS)
 
@@ -58,11 +62,18 @@ clean:
 distclean:	clean
 		rm -f $(PLUGIN) $(TESTS)
 
+depend:
+		makedepend -Y -fMakefile.inc *.cpp test/*.cpp *.h test/*.h
+
 # DO NOT DELETE
 
-CepstralPitchTracker.o: CepstralPitchTracker.h NoteHypothesis.h
+CepstralPitchTracker.o: CepstralPitchTracker.h NoteHypothesis.h Cepstrum.h
+CepstralPitchTracker.o: MeanFilter.h PeakInterpolator.h
 libmain.o: CepstralPitchTracker.h NoteHypothesis.h
 NoteHypothesis.o: NoteHypothesis.h
 PeakInterpolator.o: PeakInterpolator.h
+test/TestCepstrum.o: Cepstrum.h
+test/TestMeanFilter.o: MeanFilter.h
 test/TestNoteHypothesis.o: NoteHypothesis.h
 test/TestPeakInterpolator.o: PeakInterpolator.h
+CepstralPitchTracker.o: NoteHypothesis.h

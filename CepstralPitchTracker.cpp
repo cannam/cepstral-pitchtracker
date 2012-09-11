@@ -23,6 +23,7 @@
 */
 
 #include "CepstralPitchTracker.h"
+#include "Cepstrum.h"
 #include "MeanFilter.h"
 #include "PeakInterpolator.h"
 
@@ -263,43 +264,14 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 {
     FeatureSet fs;
 
-    int bs = m_blockSize;
-    int hs = m_blockSize/2 + 1;
-
-    double *rawcep = new double[bs];
-    double *io = new double[bs];
-    double *logmag = new double[bs];
-
-    // The "inverse symmetric" method. Seems to be the most reliable
-        
-    double magmean = 0.0;
-
-    for (int i = 0; i < hs; ++i) {
-
-	double power =
-	    inputBuffers[0][i*2  ] * inputBuffers[0][i*2  ] +
-	    inputBuffers[0][i*2+1] * inputBuffers[0][i*2+1];
-	double mag = sqrt(power);
-
-        magmean += mag;
-
-	double lm = log(mag + 0.00000001);
-	
-	logmag[i] = lm;
-	if (i > 0) logmag[bs - i] = lm;
-    }
-
-    magmean /= hs;
-    double threshold = 0.1; // for magmean
-    
-    Vamp::FFT::inverse(bs, logmag, 0, rawcep, io);
-    
-    delete[] logmag;
-    delete[] io;
+    double *rawcep = new double[m_blockSize];
+    double magmean = Cepstrum(m_blockSize).process(inputBuffers[0], rawcep);
 
     int n = m_bins;
     double *data = new double[n];
-    MeanFilter(m_vflen).filterSubsequence(rawcep, data, m_blockSize, n, m_binFrom);
+    MeanFilter(m_vflen).filterSubsequence
+        (rawcep, data, m_blockSize, n, m_binFrom);
+
     delete[] rawcep;
 
     double maxval = 0.0;
@@ -332,6 +304,8 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
     double peakfreq = m_inputSampleRate / (cimax + m_binFrom);
 
     double confidence = 0.0;
+    double threshold = 0.1; // for magmean
+
     if (nextPeakVal != 0.0) {
         confidence = (maxval - nextPeakVal) * 10.0;
         if (magmean < threshold) confidence = 0.0;
