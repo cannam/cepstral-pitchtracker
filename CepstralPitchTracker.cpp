@@ -24,6 +24,7 @@
 
 #include "CepstralPitchTracker.h"
 #include "MeanFilter.h"
+#include "PeakInterpolator.h"
 
 #include "vamp-sdk/FFT.h"
 
@@ -257,71 +258,6 @@ CepstralPitchTracker::addFeaturesFrom(NoteHypothesis h, FeatureSet &fs)
     fs[1].push_back(nf);
 }
 
-double
-CepstralPitchTracker::cubicInterpolate(const double y[4], double x)
-{
-    double a0 = y[3] - y[2] - y[0] + y[1];
-    double a1 = y[0] - y[1] - a0;
-    double a2 = y[2] - y[0];
-    double a3 = y[1];
-    return
-        a0 * x * x * x +
-        a1 * x * x +
-        a2 * x +
-        a3;
-}
-
-double
-CepstralPitchTracker::findInterpolatedPeak(const double *in, int maxbin)
-{
-    if (maxbin < 2 || maxbin > m_bins - 3) {
-        return maxbin;
-    }
-
-    double maxval = 0.0;
-    double maxidx = maxbin;
-
-    const int divisions = 10;
-    double y[4];
-
-    y[0] = in[maxbin-1];
-    y[1] = in[maxbin];
-    y[2] = in[maxbin+1];
-    y[3] = in[maxbin+2];
-    for (int i = 0; i < divisions; ++i) {
-        double probe = double(i) / double(divisions);
-        double value = cubicInterpolate(y, probe);
-        if (value > maxval) {
-            maxval = value; 
-            maxidx = maxbin + probe;
-        }
-    }
-
-    y[3] = y[2];
-    y[2] = y[1];
-    y[1] = y[0];
-    y[0] = in[maxbin-2];
-    for (int i = 0; i < divisions; ++i) {
-        double probe = double(i) / double(divisions);
-        double value = cubicInterpolate(y, probe);
-        if (value > maxval) {
-            maxval = value; 
-            maxidx = maxbin - 1 + probe;
-        }
-    }
-
-/*
-    std::cerr << "centre = " << maxbin << ": ["
-              << in[maxbin-2] << ","
-              << in[maxbin-1] << ","
-              << in[maxbin] << ","
-              << in[maxbin+1] << ","
-              << in[maxbin+2] << "] -> " << maxidx << std::endl;
-*/
-
-    return maxidx;
-}
-
 CepstralPitchTracker::FeatureSet
 CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timestamp)
 {
@@ -391,7 +327,8 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
         }
     }
 
-    double cimax = findInterpolatedPeak(data, maxbin);
+    PeakInterpolator pi;
+    double cimax = pi.findPeakLocation(data, m_bins, maxbin);
     double peakfreq = m_inputSampleRate / (cimax + m_binFrom);
 
     double confidence = 0.0;
