@@ -38,12 +38,12 @@ BOOST_AUTO_TEST_SUITE(TestFFT)
 
 #define COMPARE_CONST(a, n) \
     for (int cmp_i = 0; cmp_i < (int)(sizeof(a)/sizeof(a[0])); ++cmp_i) { \
-        BOOST_CHECK_EQUAL(a[cmp_i] + 1.1, n + 1.1); \
+        BOOST_CHECK_SMALL(a[cmp_i] - n, 1e-14);				\
     }
 
 #define COMPARE_ARRAY(a, b)						\
     for (int cmp_i = 0; cmp_i < (int)(sizeof(a)/sizeof(a[0])); ++cmp_i) { \
-        BOOST_CHECK_EQUAL(a[cmp_i] + 1.1, b[cmp_i] + 1.1); \
+        BOOST_CHECK_SMALL(a[cmp_i] - b[cmp_i], 1e-14);			\
     }
 
 BOOST_AUTO_TEST_CASE(dc)
@@ -101,10 +101,10 @@ BOOST_AUTO_TEST_CASE(sineCosine)
     double re[4], im[4];
     Vamp::FFT::forward(4, in, 0, re, im);
     BOOST_CHECK_EQUAL(re[0], 0.0);
-    BOOST_CHECK_EQUAL(re[1], 1.0);
+    BOOST_CHECK_CLOSE(re[1], 1.0, 1e-12);
     BOOST_CHECK_EQUAL(re[2], 0.0);
     BOOST_CHECK_EQUAL(im[0], 0.0);
-    BOOST_CHECK_EQUAL(im[1], -2.0);
+    BOOST_CHECK_CLOSE(im[1], -2.0, 1e-12);
     BOOST_CHECK_EQUAL(im[2], 0.0);
     double back[4];
     double backim[4];
@@ -119,10 +119,10 @@ BOOST_AUTO_TEST_CASE(sineCosineDC)
     double re[4], im[4];
     Vamp::FFT::forward(4, in, 0, re, im);
     BOOST_CHECK_EQUAL(re[0], 0.0);
-    BOOST_CHECK_EQUAL(re[1], 1.0);
+    BOOST_CHECK_CLOSE(re[1], 1.0, 1e-12);
     BOOST_CHECK_EQUAL(re[2], 0.0);
     BOOST_CHECK_EQUAL(im[0], 0.0);
-    BOOST_CHECK_EQUAL(im[1], -2.0);
+    BOOST_CHECK_CLOSE(im[1], -2.0, 1e-12);
     BOOST_CHECK_EQUAL(im[2], 0.0);
     double back[4];
     double backim[4];
