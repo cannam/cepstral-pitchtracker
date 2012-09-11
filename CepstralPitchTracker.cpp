@@ -23,6 +23,7 @@
 */
 
 #include "CepstralPitchTracker.h"
+#include "MeanFilter.h"
 
 #include "vamp-sdk/FFT.h"
 
@@ -256,24 +257,6 @@ CepstralPitchTracker::addFeaturesFrom(NoteHypothesis h, FeatureSet &fs)
     fs[1].push_back(nf);
 }
 
-void
-CepstralPitchTracker::filter(const double *cep, double *data)
-{
-    for (int i = 0; i < m_bins; ++i) {
-        double v = 0;
-        int n = 0;
-        // average according to the vertical filter length
-        for (int j = -m_vflen/2; j <= m_vflen/2; ++j) {
-            int ix = i + m_binFrom + j;
-            if (ix >= 0 && ix < (int)m_blockSize) {
-                v += cep[ix];
-                ++n;
-            }
-        }
-        data[i] = v / n;
-    }
-}
-
 double
 CepstralPitchTracker::cubicInterpolate(const double y[4], double x)
 {
@@ -380,7 +363,7 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 
     int n = m_bins;
     double *data = new double[n];
-    filter(rawcep, data);
+    MeanFilter(m_vflen).filterSubsequence(rawcep, data, m_blockSize, n, m_binFrom);
     delete[] rawcep;
 
     double maxval = 0.0;

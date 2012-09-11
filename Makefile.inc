@@ -14,6 +14,7 @@ TEST_LDFLAGS := $(LDFLAGS) -lboost_unit_test_framework
 PLUGIN := cepstral-pitchtracker$(PLUGIN_EXT)
 
 HEADERS := CepstralPitchTracker.h \
+           MeanFilter.h \
 	   NoteHypothesis.h \
 	   PeakInterpolator.h
 
@@ -24,6 +25,7 @@ SOURCES := CepstralPitchTracker.cpp \
 PLUGIN_MAIN := libmain.cpp
 
 TESTS := test/test-notehypothesis \
+         test/test-meanfilter \
          test/test-peakinterpolator
 
 OBJECTS := $(SOURCES:.cpp=.o)
@@ -38,6 +40,9 @@ $(PLUGIN): $(PLUGIN_OBJECTS)
 	$(CXX) -o $@ $^ $(PLUGIN_LDFLAGS)
 
 test/test-notehypothesis: test/TestNoteHypothesis.o $(OBJECTS)
+	$(CXX) -o $@ $^ $(TEST_LDFLAGS)
+
+test/test-meanfilter: test/TestMeanFilter.o $(OBJECTS)
 	$(CXX) -o $@ $^ $(TEST_LDFLAGS)
 
 test/test-peakinterpolator: test/TestPeakInterpolator.o $(OBJECTS)
