@@ -149,6 +149,16 @@ NoteHypothesis::getAcceptedEstimates() const
     }
 }
 
+RealTime
+NoteHypothesis::getStartTime() const
+{
+    if (!(m_state == Satisfied || m_state == Expired)) {
+        return RealTime::zeroTime;
+    } else {
+        return m_pending.begin()->time;
+    }
+}
+
 double
 NoteHypothesis::getMeanFrequency() const
 {

@@ -113,6 +113,11 @@ public:
     };
     
     /**
+     * Return the time of the first accepted estimate
+     */
+    Vamp::RealTime getStartTime() const;
+
+    /**
      * Return the mean frequency of the accepted estimates
      */
     double getMeanFrequency() const;
