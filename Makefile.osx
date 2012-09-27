@@ -1,9 +1,9 @@
 
-CFLAGS := -I../inst/include -Wall -g -fPIC 
+CFLAGS := -I../inst/include -I/usr/local/boost -Wall -g -fPIC 
 CXXFLAGS := $(CFLAGS)
 
-LDFLAGS := -dynamiclib -L../inst/lib -lvamp-sdk
-
+LDFLAGS := -L../inst/lib -lvamp-sdk -L/usr/local/boost/stage/lib 
+PLUGIN_LDFLAGS := -dynamiclib
 PLUGIN_EXT := .dylib
 
 include Makefile.inc

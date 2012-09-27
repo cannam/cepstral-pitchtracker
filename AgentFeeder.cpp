@@ -26,71 +26,83 @@
 
 void AgentFeeder::feed(NoteHypothesis::Estimate e)
 {
-    if (!m_current.accept(e)) {
+    if (m_haveCurrent) {
+        if (m_current.accept(e)) {
+            return;
+        }
+        if (m_current.getState() == NoteHypothesis::Expired) {
+            m_accepted.push_back(m_current);
+            m_haveCurrent = false;
+        }
+    }
 
-	if (m_current.getState() == NoteHypothesis::Expired) {
-	    m_accepted.push_back(m_current);
-	}
+    bool swallowed = false;
 
-	bool swallowed = false;
+    Hypotheses newCandidates;
 
-	Hypotheses newCandidates;
-
-	for (typename Hypotheses::iterator i = m_candidates.begin();
-	     i != m_candidates.end(); ++i) {
-
-	    NoteHypothesis h = *i;
-                
-	    if (swallowed) {
-
-		// don't offer: each observation can only belong to one
-		// satisfied hypothesis
-		newCandidates.push_back(h);
-
-	    } else {
-
-		if (h.accept(e)) {
-
-		    if (h.getState() == NoteHypothesis::Satisfied) {
-
-			swallowed = true;
+    for (Hypotheses::iterator i = m_candidates.begin();
+         i != m_candidates.end(); ++i) {
         
-			if (m_current.getState() == NoteHypothesis::Expired ||
-			    m_current.getState() == NoteHypothesis::Rejected) {
-			    m_current = h;
-			} else {
-			    newCandidates.push_back(h);
-			}
-                            
-		    } else {
-			newCandidates.push_back(h);
-		    }
-		}
-	    }
-	}
+        NoteHypothesis h = *i;
+        
+        if (swallowed) {
             
-	if (!swallowed) {
-	    NoteHypothesis h;
-	    h.accept(e); // must succeed, as h is new
-	    newCandidates.push_back(h);
-	}
-
-	// reap rejected/expired hypotheses from candidates list,
-	// and assign back to m_candidates
-
-	m_candidates.clear();
-
-	for (typename Hypotheses::const_iterator i = newCandidates.begin();
-	     i != newCandidates.end(); ++i) {
-	    NoteHypothesis h = *i;
-	    if (h.getState() != NoteHypothesis::Rejected && 
-		h.getState() != NoteHypothesis::Expired) {
-		m_candidates.push_back(h);
-	    }
-	}
-    }  
+            // don't offer: each observation can only belong to one
+            // satisfied hypothesis
+            newCandidates.push_back(h);
+            
+        } else {
+            
+            if (h.accept(e)) {
+                
+                if (h.getState() == NoteHypothesis::Satisfied) {
+                    
+                    swallowed = true;
+                    
+                    if (!m_haveCurrent ||
+                        m_current.getState() == NoteHypothesis::Expired ||
+                        m_current.getState() == NoteHypothesis::Rejected) {
+                        m_current = h;
+                        m_haveCurrent = true;
+                    } else {
+                        newCandidates.push_back(h);
+                    }
+                    
+                } else {
+                    newCandidates.push_back(h);
+                }
+            }
+        }
+    }
+    
+    if (!swallowed) {
+        NoteHypothesis h;
+        if (h.accept(e)) {
+            newCandidates.push_back(h);
+        }
+    }
+    
+    m_candidates = reap(newCandidates);
 }
 
+AgentFeeder::Hypotheses
+AgentFeeder::reap(Hypotheses candidates)
+{
+    // reap rejected/expired hypotheses from list of candidates
+
+    Hypotheses survived;
+    for (Hypotheses::const_iterator i = candidates.begin();
+         i != candidates.end(); ++i) {
+        NoteHypothesis h = *i;
+        if (h.getState() != NoteHypothesis::Rejected && 
+            h.getState() != NoteHypothesis::Expired) {
+            survived.push_back(h);
+        }
+    }
+
+    return survived;
+}
+    
 void
 AgentFeeder::finish()
 {

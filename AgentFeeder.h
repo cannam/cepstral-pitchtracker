@@ -49,7 +49,7 @@
 class AgentFeeder
 {
 public:
-    AgentFeeder() { }
+    AgentFeeder() : m_haveCurrent(false) { }
 
     void feed(NoteHypothesis::Estimate);
     void finish();
@@ -60,9 +60,12 @@ public:
         return m_accepted;
     }
 
+    Hypotheses reap(Hypotheses);
+
 private:
     Hypotheses m_candidates;
     NoteHypothesis m_current;
+    bool m_haveCurrent;
     Hypotheses m_accepted;
 };
 

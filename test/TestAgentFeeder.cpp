@@ -31,6 +31,8 @@
 
 static Vamp::RealTime ms(int n) { return Vamp::RealTime::fromMilliseconds(n); }
 
+static const int low = 500, high = 700;
+
 typedef NoteHypothesis::Estimate Est;
 
 BOOST_AUTO_TEST_SUITE(TestAgentFeeder)
@@ -45,10 +47,10 @@ BOOST_AUTO_TEST_CASE(feederEmpty)
 
 BOOST_AUTO_TEST_CASE(feederSingle)
 {
-    Est e0(1, ms(0), 1);
-    Est e10(1, ms(10), 1);
-    Est e20(1, ms(20), 1);
-    Est e30(1, ms(30), 1);
+    Est e0(low, ms(0), 1);
+    Est e10(low, ms(10), 1);
+    Est e20(low, ms(20), 1);
+    Est e30(low, ms(30), 1);
 
     AgentFeeder f;
     f.feed(e0);
@@ -64,15 +66,15 @@ BOOST_AUTO_TEST_CASE(feederSingle)
 
 BOOST_AUTO_TEST_CASE(feederPairSeparate)
 {
-    Est e0(1, ms(0), 1);
-    Est e10(1, ms(10), 1);
-    Est e20(1, ms(20), 1);
-    Est e30(1, ms(30), 1);
+    Est e0(low, ms(0), 1);
+    Est e10(low, ms(10), 1);
+    Est e20(low, ms(20), 1);
+    Est e30(low, ms(30), 1);
 
-    Est f0(3, ms(2000), 1);
-    Est f10(3, ms(2010), 1);
-    Est f20(3, ms(2020), 1);
-    Est f30(3, ms(2030), 1);
+    Est f0(high, ms(2000), 1);
+    Est f10(high, ms(2010), 1);
+    Est f20(high, ms(2020), 1);
+    Est f30(high, ms(2030), 1);
 
     AgentFeeder f;
     f.feed(e0);
@@ -98,22 +100,23 @@ BOOST_AUTO_TEST_CASE(feederPairOverlapping)
 
     // (With fffffff stopping before eeee has expired.)
 
-    // This should give us one hypothesis, eeee.
+    // This should give us one hypothesis, eeee, because eeee is still
+    // the current hypothesis by the time fffffff ends.
 
-    Est e0(1, ms(0), 1);
-    Est e10(1, ms(10), 1);
+    Est e0(low, ms(0), 1);
+    Est e10(low, ms(10), 1);
 
-    Est e20(1, ms(20), 1);
-    Est f20(3, ms(20), 1);
+    Est e20(low, ms(20), 1);
+    Est f20(high, ms(20), 1);
 
-    Est e30(1, ms(30), 1);
-    Est f30(3, ms(30), 1);
+    Est e30(low, ms(30), 1);
+    Est f30(high, ms(30), 1);
 
-    Est f40(3, ms(40), 1);
-    Est f50(3, ms(50), 1);
-    Est f60(3, ms(60), 1);
-    Est f70(3, ms(70), 1);
-    Est f80(3, ms(80), 1);
+    Est f40(high, ms(40), 1);
+    Est f41(high, ms(41), 1);
+    Est f42(high, ms(42), 1);
+    Est f43(high, ms(43), 1);
+    Est f44(high, ms(44), 1);
 
     AgentFeeder f;
     f.feed(e0);
@@ -123,10 +126,10 @@ BOOST_AUTO_TEST_CASE(feederPairOverlapping)
     f.feed(e30);
     f.feed(f30);
     f.feed(f40);
-    f.feed(f50);
-    f.feed(f60);
-    f.feed(f70);
-    f.feed(f80);
+    f.feed(f41);
+    f.feed(f42);
+    f.feed(f43);
+    f.feed(f44);
     f.finish();
 
     AgentFeeder::Hypotheses accepted = f.getAcceptedHypotheses();
@@ -153,20 +156,20 @@ BOOST_AUTO_TEST_CASE(feederPairOverlappingLong)
     // hypothesis ends, the fffffff one should replace it. So,
     // both should be recognised.
 
-    Est e0(1, ms(0), 1);
-    Est e10(1, ms(500), 1);
+    Est e0(low, ms(0), 1);
+    Est e10(low, ms(10), 1);
 
-    Est e20(1, ms(1000), 1);
-    Est f20(3, ms(1000), 1);
+    Est e20(low, ms(20), 1);
+    Est f20(high, ms(20), 1);
 
-    Est e30(1, ms(1500), 1);
-    Est f30(3, ms(1500), 1);
+    Est e30(low, ms(30), 1);
+    Est f30(high, ms(30), 1);
 
-    Est f40(3, ms(2000), 1);
-    Est f50(3, ms(2500), 1);
-    Est f60(3, ms(3000), 1);
-    Est f70(3, ms(3500), 1);
-    Est f80(3, ms(4000), 1);
+    Est f40(high, ms(40), 1);
+    Est f50(high, ms(50), 1);
+    Est f60(high, ms(60), 1);
+    Est f70(high, ms(70), 1);
+    Est f80(high, ms(80), 1);
 
     AgentFeeder f;
     f.feed(e0);
@@ -192,7 +195,7 @@ BOOST_AUTO_TEST_CASE(feederPairOverlappingLong)
     BOOST_CHECK_EQUAL(i->getAcceptedEstimates().size(), size_t(4));
     ++i;
 
-    BOOST_CHECK_EQUAL(i->getStartTime(), ms(1000)); 
+    BOOST_CHECK_EQUAL(i->getStartTime(), ms(20)); 
     BOOST_CHECK_EQUAL(i->getAcceptedEstimates().size(), size_t(7));
     ++i;
 }
@@ -208,19 +211,19 @@ BOOST_AUTO_TEST_CASE(feederPairContaining)
     // satisfied hypothesis eeeeeeee while it is still in
     // progress.
 
-    Est e0(1, ms(0), 1);
-    Est e10(1, ms(10), 1);
-    Est e20(1, ms(20), 1);
-    Est e30(1, ms(30), 1);
-    Est e40(1, ms(40), 1);
-    Est e50(1, ms(50), 1);
-    Est e60(1, ms(60), 1);
-    Est e70(1, ms(70), 1);
+    Est e0(low, ms(0), 1);
+    Est e10(low, ms(10), 1);
+    Est e20(low, ms(20), 1);
+    Est e30(low, ms(30), 1);
+    Est e40(low, ms(40), 1);
+    Est e50(low, ms(50), 1);
+    Est e60(low, ms(60), 1);
+    Est e70(low, ms(70), 1);
 
-    Est f20(3, ms(20), 1);
-    Est f30(3, ms(30), 1);
-    Est f40(3, ms(40), 1);
-    Est f50(3, ms(50), 1);
+    Est f20(high, ms(20), 1);
+    Est f30(high, ms(30), 1);
+    Est f40(high, ms(40), 1);
+    Est f50(high, ms(50), 1);
 
     AgentFeeder f;
 
