@@ -29,6 +29,8 @@
 
 #include "NoteHypothesis.h"
 
+class AgentFeeder;
+
 class CepstralPitchTracker : public Vamp::Plugin
 {
 public:
@@ -78,15 +80,8 @@ protected:
     int m_binTo;
     int m_bins; // count of "interesting" bins, those returned in m_cepOutput
 
-    typedef std::vector<NoteHypothesis> Hypotheses;
-    Hypotheses m_possible;
-    NoteHypothesis m_good;
-
+    AgentFeeder *m_feeder;
     void addFeaturesFrom(NoteHypothesis h, FeatureSet &fs);
-
-    void filter(const double *in, double *out);
-    double cubicInterpolate(const double[4], double);
-    double findInterpolatedPeak(const double *in, int maxbin);
 };
 
 #endif
