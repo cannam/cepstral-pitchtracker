@@ -80,8 +80,11 @@ protected:
     int m_binTo;
     int m_bins; // count of "interesting" bins, those returned in m_cepOutput
 
+    int m_nAccepted;
+
     AgentFeeder *m_feeder;
     void addFeaturesFrom(NoteHypothesis h, FeatureSet &fs);
+    void addNewFeatures(FeatureSet &fs);
 };
 
 #endif

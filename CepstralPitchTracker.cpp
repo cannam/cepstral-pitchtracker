@@ -53,6 +53,7 @@ CepstralPitchTracker::CepstralPitchTracker(float inputSampleRate) :
     m_binFrom(0),
     m_binTo(0),
     m_bins(0),
+    m_nAccepted(0),
     m_feeder(0)
 {
 }
@@ -243,6 +244,7 @@ CepstralPitchTracker::reset()
 {
     delete m_feeder;
     m_feeder = new AgentFeeder();
+    m_nAccepted = 0;
 }
 
 void
@@ -268,11 +270,24 @@ CepstralPitchTracker::addFeaturesFrom(NoteHypothesis h, FeatureSet &fs)
     fs[1].push_back(nf);
 }
 
+void
+CepstralPitchTracker::addNewFeatures(FeatureSet &fs)
+{
+    int n = m_feeder->getAcceptedHypotheses().size();
+    if (n == m_nAccepted) return;
+
+    AgentFeeder::Hypotheses accepted = m_feeder->getAcceptedHypotheses();
+
+    for (int i = m_nAccepted; i < n; ++i) {
+        addFeaturesFrom(accepted[i], fs);
+    }
+
+    m_nAccepted = n;
+}
+
 CepstralPitchTracker::FeatureSet
 CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timestamp)
 {
-    FeatureSet fs;
-
     double *rawcep = new double[m_blockSize];
     double magmean = Cepstrum(m_blockSize).process(inputBuffers[0], rawcep);
 
@@ -295,7 +310,7 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 
     if (maxbin < 0) {
         delete[] data;
-        return fs;
+        return FeatureSet();
     }
 
     double nextPeakVal = 0.0;
@@ -321,6 +336,8 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 //        std::cerr << "magmean = " << magmean << ", confidence = " << confidence << std::endl;
     }
 
+    delete[] data;
+
     NoteHypothesis::Estimate e;
     e.freq = peakfreq;
     e.time = timestamp;
@@ -328,7 +345,8 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 
     m_feeder->feed(e);
 
-    delete[] data;
+    FeatureSet fs;
+    addNewFeatures(fs);
     return fs;
 }
 
@@ -337,11 +355,7 @@ CepstralPitchTracker::getRemainingFeatures()
 {
     m_feeder->finish();
 
-    AgentFeeder::Hypotheses accepted = m_feeder->getAcceptedHypotheses();
-
     FeatureSet fs;
-    for (int i = 0; i < accepted.size(); ++i) {
-        addFeaturesFrom(accepted[i], fs);
-    }
+    addNewFeatures(fs);
     return fs;
 }

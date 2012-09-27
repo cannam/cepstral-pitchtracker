@@ -56,7 +56,7 @@ public:
 
     typedef std::vector<NoteHypothesis> Hypotheses;
 
-    Hypotheses getAcceptedHypotheses() const {
+    const Hypotheses &getAcceptedHypotheses() const {
         return m_accepted;
     }
 
