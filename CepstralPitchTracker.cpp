@@ -26,6 +26,7 @@
 #include "Cepstrum.h"
 #include "MeanFilter.h"
 #include "PeakInterpolator.h"
+#include "AgentFeeder.h"
 
 #include "vamp-sdk/FFT.h"
 
@@ -51,12 +52,14 @@ CepstralPitchTracker::CepstralPitchTracker(float inputSampleRate) :
     m_vflen(1),
     m_binFrom(0),
     m_binTo(0),
-    m_bins(0)
+    m_bins(0),
+    m_feeder(0)
 {
 }
 
 CepstralPitchTracker::~CepstralPitchTracker()
 {
+    delete m_feeder;
 }
 
 string
@@ -223,6 +226,10 @@ CepstralPitchTracker::initialise(size_t channels, size_t stepSize, size_t blockS
     if (m_binTo >= (int)m_blockSize / 2) {
         m_binTo = m_blockSize / 2 - 1;
     }
+    if (m_binFrom >= m_binTo) {
+        // shouldn't happen except for degenerate samplerate / blocksize combos
+        m_binFrom = m_binTo - 1;
+    }
 
     m_bins = (m_binTo - m_binFrom) + 1;
 
@@ -234,6 +241,8 @@ CepstralPitchTracker::initialise(size_t channels, size_t stepSize, size_t blockS
 void
 CepstralPitchTracker::reset()
 {
+    delete m_feeder;
+    m_feeder = new AgentFeeder();
 }
 
 void
@@ -317,51 +326,7 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
     e.time = timestamp;
     e.confidence = confidence;
 
-    if (!m_good.accept(e)) {
-
-        int candidate = -1;
-        bool accepted = false;
-
-        for (int i = 0; i < (int)m_possible.size(); ++i) {
-            if (m_possible[i].accept(e)) {
-                if (m_possible[i].getState() == NoteHypothesis::Satisfied) {
-                    accepted = true;
-                    candidate = i;
-                }
-                break;
-            }
-        }
-
-        if (!accepted) {
-            NoteHypothesis h;
-            h.accept(e); //!!! must succeed as h is new, so perhaps there should be a ctor for this
-            m_possible.push_back(h);
-        }
-
-        if (m_good.getState() == NoteHypothesis::Expired) {
-            addFeaturesFrom(m_good, fs);
-        }
-        
-        if (m_good.getState() == NoteHypothesis::Expired ||
-            m_good.getState() == NoteHypothesis::Rejected) {
-            if (candidate >= 0) {
-                m_good = m_possible[candidate];
-            } else {
-                m_good = NoteHypothesis();
-            }
-        }
-
-        // reap rejected/expired hypotheses from possible list
-        Hypotheses toReap = m_possible;
-        m_possible.clear();
-        for (int i = 0; i < (int)toReap.size(); ++i) {
-            NoteHypothesis h = toReap[i];
-            if (h.getState() != NoteHypothesis::Rejected && 
-                h.getState() != NoteHypothesis::Expired) {
-                m_possible.push_back(h);
-            }
-        }
-    }  
+    m_feeder->feed(e);
 
     delete[] data;
     return fs;
@@ -370,9 +335,13 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 CepstralPitchTracker::FeatureSet
 CepstralPitchTracker::getRemainingFeatures()
 {
+    m_feeder->finish();
+
+    AgentFeeder::Hypotheses accepted = m_feeder->getAcceptedHypotheses();
+
     FeatureSet fs;
-    if (m_good.getState() == NoteHypothesis::Satisfied) {
-        addFeaturesFrom(m_good, fs);
+    for (int i = 0; i < accepted.size(); ++i) {
+        addFeaturesFrom(accepted[i], fs);
     }
     return fs;
 }
