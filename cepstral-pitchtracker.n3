@@ -1,0 +1,65 @@
+@prefix rdfs:     <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:      <http://www.w3.org/2001/XMLSchema#> .
+@prefix vamp:     <http://purl.org/ontology/vamp/> .
+@prefix plugbase: <http://vamp-plugins.org/rdf/plugins/cepstral-pitchtracker#> .
+@prefix owl:      <http://www.w3.org/2002/07/owl#> .
+@prefix dc:       <http://purl.org/dc/elements/1.1/> .
+@prefix af:       <http://purl.org/ontology/af/> .
+@prefix foaf:     <http://xmlns.com/foaf/0.1/> .
+@prefix cc:       <http://web.resource.org/cc/> .
+@prefix :         <#> .
+
+<>  a   vamp:PluginDescription ;
+    foaf:maker          <http://www.vamp-plugins.org/doap.rdf#template-generator> ;
+    foaf:primaryTopic   <http://vamp-plugins.org/rdf/plugins/cepstral-pitchtracker> .
+
+:cepstral-pitchtracker a  vamp:PluginLibrary ;
+    vamp:identifier "cepstral-pitchtracker"  ; 
+    vamp:available_plugin plugbase:cepstral-pitchtracker ; 
+    foaf:page <http://code.soundsoftware.ac.uk/projects/cepstral-pitchtracker> ;
+    .
+
+plugbase:cepstral-pitchtracker a   vamp:Plugin ;
+    dc:title              "Cepstral Pitch Tracker" ;
+    vamp:name             "Cepstral Pitch Tracker" ;
+    dc:description        """Estimate f0 of monophonic material using a cepstrum method.""" ;
+    foaf:maker            [ foaf:name "Chris Cannam" ] ; # FIXME could give plugin author's URI here
+    dc:rights             """Freely redistributable (BSD license)""" ;
+#   cc:license            <Place plugin license URI here and uncomment> ; 
+    vamp:identifier       "cepstral-pitchtracker" ;
+    vamp:vamp_API_version vamp:api_version_2 ;
+    owl:versionInfo       "1" ;
+    vamp:input_domain     vamp:FrequencyDomain ;
+
+    vamp:output      plugbase:cepstral-pitchtracker_output_f0 ;
+    vamp:output      plugbase:cepstral-pitchtracker_output_notes ;
+    .
+plugbase:cepstral-pitchtracker_output_f0 a  vamp:DenseOutput ;
+    vamp:identifier       "f0" ;
+    dc:title              "Estimated f0" ;
+    dc:description        """Estimated fundamental frequency"""  ;
+    vamp:fixed_bin_count  "true" ;
+    vamp:unit             "Hz" ;
+    a                 vamp:KnownExtentsOutput ;
+    vamp:min_value    50  ;
+    vamp:max_value    900  ;
+    vamp:bin_count        1 ;
+#   vamp:computes_event_type   <Place event type URI here and uncomment> ;
+#   vamp:computes_feature      <Place feature attribute URI here and uncomment> ;
+#   vamp:computes_signal_type  <Place signal type URI here and uncomment> ;
+    .
+plugbase:cepstral-pitchtracker_output_notes a  vamp:DenseOutput ;
+    vamp:identifier       "notes" ;
+    dc:title              "Notes" ;
+    dc:description        """Derived fixed-pitch note frequencies"""  ;
+    vamp:fixed_bin_count  "true" ;
+    vamp:unit             "Hz" ;
+    a                 vamp:KnownExtentsOutput ;
+    vamp:min_value    50  ;
+    vamp:max_value    900  ;
+    vamp:bin_count        1 ;
+#   vamp:computes_event_type   <Place event type URI here and uncomment> ;
+#   vamp:computes_feature      <Place feature attribute URI here and uncomment> ;
+#   vamp:computes_signal_type  <Place signal type URI here and uncomment> ;
+    .
+
