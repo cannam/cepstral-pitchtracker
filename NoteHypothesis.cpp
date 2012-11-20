@@ -79,7 +79,7 @@ NoteHypothesis::isSatisfied() const
     }
     meanConfidence /= m_pending.size();
 
-    int lengthRequired = 10000;
+    int lengthRequired = 100;
     if (meanConfidence > 0.0) {
         lengthRequired = int(2.0 / meanConfidence + 0.5);
     }
