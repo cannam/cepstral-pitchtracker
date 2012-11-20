@@ -98,7 +98,9 @@ NoteHypothesis::accept(Estimate s)
         // avoid piling up a lengthy sequence of estimates that are
         // all acceptable but are in total not enough to cause us to
         // be satisfied
-        m_state = Rejected;
+        if (m_pending.empty()) {
+            m_state = Rejected;
+        }
         return false;
     }
 

@@ -73,6 +73,20 @@ BOOST_AUTO_TEST_CASE(noConfidence)
     BOOST_CHECK(!h.accept(e));
     BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Rejected);
 }
+
+BOOST_AUTO_TEST_CASE(noConfidenceIgnore)
+{
+    // But if we're already in process we don't go to rejected state,
+    // we just ignore this hypothesis
+    NoteHypothesis h;
+    NoteHypothesis::Estimate e;
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::New);
+    BOOST_CHECK(h.accept(e));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Provisional);
+    e.confidence = 0;
+    BOOST_CHECK(!h.accept(e));
+    BOOST_CHECK_EQUAL(h.getState(), NoteHypothesis::Provisional);
+}
 		
 BOOST_AUTO_TEST_CASE(tooSlow)
 {
