@@ -64,7 +64,6 @@ bool
 NoteHypothesis::isOutOfDateFor(Estimate s) const
 {
     if (m_pending.empty()) return false;
-
     return ((s.time - m_pending[m_pending.size()-1].time) > 
             RealTime::fromMilliseconds(40));
 }
@@ -80,7 +79,7 @@ NoteHypothesis::isSatisfied() const
     }
     meanConfidence /= m_pending.size();
 
-    int lengthRequired = 10000;
+    int lengthRequired = 100;
     if (meanConfidence > 0.0) {
         lengthRequired = int(2.0 / meanConfidence + 0.5);
     }
@@ -92,6 +91,18 @@ bool
 NoteHypothesis::accept(Estimate s)
 {
     bool accept = false;
+
+    static double negligibleConfidence = 0.0001;
+
+    if (s.confidence < negligibleConfidence) {
+        // avoid piling up a lengthy sequence of estimates that are
+        // all acceptable but are in total not enough to cause us to
+        // be satisfied
+        if (m_pending.empty()) {
+            m_state = Rejected;
+        }
+        return false;
+    }
 
     switch (m_state) {
 

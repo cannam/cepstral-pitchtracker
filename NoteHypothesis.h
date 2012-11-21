@@ -68,7 +68,7 @@ public:
     ~NoteHypothesis();
 
     struct Estimate {
-        Estimate() : freq(0), time(), confidence(0) { }
+        Estimate() : freq(0), time(), confidence(1) { }
         Estimate(double _f, Vamp::RealTime _t, double _c) :
             freq(_f), time(_t), confidence(_c) { }
         bool operator==(const Estimate &e) const {
