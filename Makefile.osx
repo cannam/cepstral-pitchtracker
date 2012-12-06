@@ -3,7 +3,7 @@ CFLAGS := -I../inst/include -I/usr/local/boost -Wall -g -fPIC
 CXXFLAGS := $(CFLAGS)
 
 LDFLAGS := -L../inst/lib -lvamp-sdk -L/usr/local/boost/stage/lib 
-PLUGIN_LDFLAGS := -dynamiclib
+PLUGIN_LDFLAGS := -dynamiclib -exported_symbols_list=vamp-plugin.list
 PLUGIN_EXT := .dylib
 
 include Makefile.inc

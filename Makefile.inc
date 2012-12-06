@@ -26,7 +26,7 @@ SOURCES := CepstralPitchTracker.cpp \
 
 PLUGIN_MAIN := libmain.cpp
 
-TESTS := test/test-meanfilter \
+TESTS ?= test/test-meanfilter \
          test/test-fft \
 	 test/test-cepstrum \
          test/test-peakinterpolator \

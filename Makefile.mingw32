@@ -1,0 +1,21 @@
+
+CXX		= i486-mingw32-c++
+CC		= i486-mingw32-gcc
+LD            	= i486-mingw32-c++
+AR            	= i486-mingw32-ar
+RANLIB          = i486-mingw32-ranlib
+
+TESTS		= test/null
+
+CFLAGS := -Wall -O2 -I../include 
+CXXFLAGS := $(CFLAGS)
+
+LDFLAGS	 := -L../lib
+PLUGIN_LDFLAGS := -shared -Wl,-Bstatic -static-libgcc -Wl,--version-script=vamp-plugin.map
+
+PLUGIN_EXT := .dll
+
+include Makefile.inc
+
+test/null:	
+		ln -s /bin/true test/null
