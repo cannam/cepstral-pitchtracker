@@ -33,6 +33,7 @@ plugbase:cepstral-pitchtracker a   vamp:Plugin ;
 
     vamp:output      plugbase:cepstral-pitchtracker_output_f0 ;
     vamp:output      plugbase:cepstral-pitchtracker_output_notes ;
+    vamp:output      plugbase:cepstral-pitchtracker_output_raw ;
     .
 plugbase:cepstral-pitchtracker_output_f0 a  vamp:DenseOutput ;
     vamp:identifier       "f0" ;
@@ -62,4 +63,17 @@ plugbase:cepstral-pitchtracker_output_notes a  vamp:DenseOutput ;
 #   vamp:computes_feature      <Place feature attribute URI here and uncomment> ;
 #   vamp:computes_signal_type  <Place signal type URI here and uncomment> ;
     .
-
+plugbase:cepstral-pitchtracker_output_raw a  vamp:DenseOutput ;
+    vamp:identifier       "raw" ;
+    dc:title              "Raw frequencies" ;
+    dc:description        """Raw peak frequencies from cepstrum, including unvoiced segments"""  ;
+    vamp:fixed_bin_count  "true" ;
+    vamp:unit             "Hz" ;
+    a                 vamp:KnownExtentsOutput ;
+    vamp:min_value    50  ;
+    vamp:max_value    900  ;
+    vamp:bin_count        1 ;
+#   vamp:computes_event_type   <Place event type URI here and uncomment> ;
+#   vamp:computes_feature      <Place feature attribute URI here and uncomment> ;
+#   vamp:computes_signal_type  <Place signal type URI here and uncomment> ;
+    .

@@ -53,6 +53,7 @@ CepstralPitchTracker::CepstralPitchTracker(float inputSampleRate) :
     m_slack(40),
     m_sensitivity(10),
     m_threshold(0.1),
+    m_fillGaps(false),
     m_binFrom(0),
     m_binTo(0),
     m_bins(0),
@@ -172,6 +173,17 @@ CepstralPitchTracker::getParameterDescriptors() const
     d.isQuantized = false;
     list.push_back(d);
     
+    d.identifier = "fill";
+    d.name = "Fill f0 gaps within a note";
+    d.description = "Return an f0 value for every frame within each discovered note, interpolating results into any gaps in the measurement";
+    d.unit = ""; //!!! todo: convert this threshold to a meaningful unit!
+    d.minValue = 0;
+    d.maxValue = 1;
+    d.defaultValue = 0;
+    d.isQuantized = true;
+    d.quantizeStep = 1;
+    list.push_back(d);
+    
     return list;
 }
 
@@ -181,6 +193,7 @@ CepstralPitchTracker::getParameter(string identifier) const
     if (identifier == "sensitivity") return m_sensitivity;
     else if (identifier == "slack") return m_slack;
     else if (identifier == "threshold") return m_threshold;
+    else if (identifier == "fill") return (m_fillGaps ? 1 : 0);
     return 0.f;
 }
 
@@ -190,6 +203,7 @@ CepstralPitchTracker::setParameter(string identifier, float value)
     if (identifier == "sensitivity") m_sensitivity = value;
     else if (identifier == "slack") m_slack = value;
     else if (identifier == "threshold") m_threshold = value;
+    else if (identifier == "fill") m_fillGaps = (value > 0.5);
 }
 
 CepstralPitchTracker::ProgramList
@@ -308,19 +322,44 @@ void
 CepstralPitchTracker::addFeaturesFrom(NoteHypothesis h, FeatureSet &fs)
 {
     NoteHypothesis::Estimates es = h.getAcceptedEstimates();
+    NoteHypothesis::Note n = h.getAveragedNote();
 
-    for (int i = 0; i < (int)es.size(); ++i) {
-	Feature f;
-	f.hasTimestamp = true;
-	f.timestamp = es[i].time;
-	f.values.push_back(es[i].freq);
-	fs[0].push_back(f);
+    if (!m_fillGaps) {
+
+        for (int i = 0; i < (int)es.size(); ++i) {
+            Feature f;
+            f.hasTimestamp = true;
+            f.timestamp = es[i].time;
+            f.values.push_back(es[i].freq);
+            fs[0].push_back(f);
+        }
+
+    } else {
+
+        int ix = 0;
+        RealTime increment = RealTime::frame2RealTime
+            (m_stepSize, m_inputSampleRate);
+
+        float freq = 0;
+
+        for (RealTime t = n.time; t < n.time + n.duration; t = t + increment) {
+            if (ix < (int)es.size() && t >= es[ix].time) {
+                freq = es[ix].freq;
+                ++ix;
+            }
+            if (freq > 0) {
+                Feature f;
+                f.hasTimestamp = true;
+                f.timestamp = t;
+                f.values.push_back(freq);
+                fs[0].push_back(f);
+            }
+        }
     }
 
     Feature nf;
     nf.hasTimestamp = true;
     nf.hasDuration = true;
-    NoteHypothesis::Note n = h.getAveragedNote();
     nf.timestamp = n.time;
     nf.duration = n.duration;
     nf.values.push_back(n.freq);

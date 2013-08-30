@@ -79,6 +79,7 @@ protected:
     float m_slack;
     float m_sensitivity;
     float m_threshold;
+    bool m_fillGaps;
 
     int m_binFrom;
     int m_binTo;
