@@ -49,7 +49,11 @@
 class AgentFeeder
 {
 public:
-    AgentFeeder() : m_haveCurrent(false) { }
+    AgentFeeder(float slack) : 
+        m_slack(slack),
+        m_current(slack), 
+        m_haveCurrent(false)
+    { }
 
     void feed(NoteHypothesis::Estimate);
     void finish();
@@ -63,6 +67,7 @@ public:
     Hypotheses reap(Hypotheses);
 
 private:
+    float m_slack;
     Hypotheses m_candidates;
     NoteHypothesis m_current;
     bool m_haveCurrent;

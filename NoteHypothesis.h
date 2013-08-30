@@ -57,10 +57,15 @@ public:
     };
     
     /**
-     * Construct an empty hypothesis. This will be in New state and
-     * will provisionally accept any estimate.
+     * Construct an empty hypothesis. The given slack (in
+     * milliseconds) determines how long the hypothesis is prepared to
+     * tolerate unacceptable estimates in between accepted estimates
+     * before it becomes rejected. A reasonable default is 40ms.
+     *
+     * This hypothesis will be in New state and will provisionally
+     * accept any estimate.
      */
-    NoteHypothesis();
+    NoteHypothesis(float slack);
 
     /**
      * Destroy the hypothesis
@@ -134,6 +139,7 @@ private:
     
     State m_state;
     Estimates m_pending;
+    float m_slack;
 };
 
 #endif

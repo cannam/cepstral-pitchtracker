@@ -28,9 +28,10 @@
 
 using Vamp::RealTime;
 
-NoteHypothesis::NoteHypothesis()
+NoteHypothesis::NoteHypothesis(float slack) :
+    m_state(New),
+    m_slack(slack)
 {
-    m_state = New;
 }
 
 NoteHypothesis::~NoteHypothesis()
@@ -65,7 +66,7 @@ NoteHypothesis::isOutOfDateFor(Estimate s) const
 {
     if (m_pending.empty()) return false;
     return ((s.time - m_pending[m_pending.size()-1].time) > 
-            RealTime::fromMilliseconds(40));
+            RealTime::fromMilliseconds(m_slack));
 }
 
 bool 

@@ -76,6 +76,10 @@ protected:
     float m_fmax;
     int m_vflen;
 
+    float m_slack;
+    float m_sensitivity;
+    float m_threshold;
+
     int m_binFrom;
     int m_binTo;
     int m_bins; // count of "interesting" bins, those returned in m_cepOutput

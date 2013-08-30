@@ -50,6 +50,9 @@ CepstralPitchTracker::CepstralPitchTracker(float inputSampleRate) :
     m_fmin(50),
     m_fmax(900),
     m_vflen(1),
+    m_slack(40),
+    m_sensitivity(10),
+    m_threshold(0.1),
     m_binFrom(0),
     m_binTo(0),
     m_bins(0),
@@ -92,7 +95,7 @@ CepstralPitchTracker::getPluginVersion() const
 {
     // Increment this each time you release a version that behaves
     // differently from the previous one
-    return 1;
+    return 2;
 }
 
 string
@@ -135,18 +138,58 @@ CepstralPitchTracker::ParameterList
 CepstralPitchTracker::getParameterDescriptors() const
 {
     ParameterList list;
+
+    ParameterDescriptor d;
+    d.identifier = "sensitivity";
+    d.name = "Sensitivity";
+    d.description = "Sensitivity of the voicing detector";
+    d.unit = "";
+    d.minValue = 0;
+    d.maxValue = 100;
+    d.defaultValue = 10;
+    d.isQuantized = true;
+    d.quantizeStep = 1;
+    list.push_back(d);
+
+    d.identifier = "slack";
+    d.name = "Slack";
+    d.description = "Maximum permissible length of voicing gap for a continuous note";
+    d.unit = "ms";
+    d.minValue = 0;
+    d.maxValue = 200;
+    d.defaultValue = 40;
+    d.isQuantized = true;
+    d.quantizeStep = 1;
+    list.push_back(d);
+    
+    d.identifier = "threshold";
+    d.name = "Silence threshold";
+    d.description = "Threshold for silence detection";
+    d.unit = ""; //!!! todo: convert this threshold to a meaningful unit!
+    d.minValue = 0;
+    d.maxValue = 0.5;
+    d.defaultValue = 0.1;
+    d.isQuantized = false;
+    list.push_back(d);
+    
     return list;
 }
 
 float
 CepstralPitchTracker::getParameter(string identifier) const
 {
+    if (identifier == "sensitivity") return m_sensitivity;
+    else if (identifier == "slack") return m_slack;
+    else if (identifier == "threshold") return m_threshold;
     return 0.f;
 }
 
 void
 CepstralPitchTracker::setParameter(string identifier, float value) 
 {
+    if (identifier == "sensitivity") m_sensitivity = value;
+    else if (identifier == "slack") m_slack = value;
+    else if (identifier == "threshold") m_threshold = value;
 }
 
 CepstralPitchTracker::ProgramList
@@ -204,6 +247,20 @@ CepstralPitchTracker::getOutputDescriptors() const
     d.hasDuration = true;
     outputs.push_back(d);
 
+    d.identifier = "raw";
+    d.name = "Raw frequencies";
+    d.description = "Raw peak frequencies from cepstrum, including unvoiced segments";
+    d.unit = "Hz";
+    d.hasFixedBinCount = true;
+    d.binCount = 1;
+    d.hasKnownExtents = true;
+    d.minValue = m_fmin;
+    d.maxValue = m_fmax;
+    d.isQuantized = false;
+    d.sampleType = OutputDescriptor::OneSamplePerStep;
+    d.hasDuration = false;
+    outputs.push_back(d);
+
     return outputs;
 }
 
@@ -243,7 +300,7 @@ void
 CepstralPitchTracker::reset()
 {
     delete m_feeder;
-    m_feeder = new AgentFeeder();
+    m_feeder = new AgentFeeder(m_slack);
     m_nAccepted = 0;
 }
 
@@ -327,12 +384,18 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
     double cimax = pi.findPeakLocation(data, m_bins, maxbin);
     double peakfreq = m_inputSampleRate / (cimax + m_binFrom);
 
+    FeatureSet fs;
+    Feature rawf;
+    rawf.hasTimestamp = false;
+    rawf.hasDuration = false;
+    rawf.values.push_back(peakfreq);
+    fs[2].push_back(rawf);
+
     double confidence = 0.0;
-    double threshold = 0.1; // for magmean
 
     if (nextPeakVal != 0.0) {
-        confidence = (maxval - nextPeakVal) * 10.0;
-        if (magmean < threshold) confidence = 0.0;
+        confidence = (maxval - nextPeakVal) * m_sensitivity;
+        if (magmean < m_threshold) confidence = 0.0;
     }
 
     delete[] data;
@@ -344,7 +407,6 @@ CepstralPitchTracker::process(const float *const *inputBuffers, RealTime timesta
 
     m_feeder->feed(e);
 
-    FeatureSet fs;
     addNewFeatures(fs);
     return fs;
 }

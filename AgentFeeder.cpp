@@ -76,7 +76,7 @@ void AgentFeeder::feed(NoteHypothesis::Estimate e)
     }
     
     if (!swallowed) {
-        NoteHypothesis h;
+        NoteHypothesis h(m_slack);
         if (h.accept(e)) {
             newCandidates.push_back(h);
         }

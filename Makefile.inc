@@ -73,13 +73,16 @@ depend:
 
 # DO NOT DELETE
 
+AgentFeeder.o: AgentFeeder.h NoteHypothesis.h
 CepstralPitchTracker.o: CepstralPitchTracker.h NoteHypothesis.h Cepstrum.h
-CepstralPitchTracker.o: MeanFilter.h PeakInterpolator.h
-libmain.o: CepstralPitchTracker.h NoteHypothesis.h
+CepstralPitchTracker.o: MeanFilter.h PeakInterpolator.h AgentFeeder.h
 NoteHypothesis.o: NoteHypothesis.h
 PeakInterpolator.o: PeakInterpolator.h
+libmain.o: CepstralPitchTracker.h NoteHypothesis.h
+test/TestAgentFeeder.o: AgentFeeder.h NoteHypothesis.h
 test/TestCepstrum.o: Cepstrum.h
 test/TestMeanFilter.o: MeanFilter.h
 test/TestNoteHypothesis.o: NoteHypothesis.h
 test/TestPeakInterpolator.o: PeakInterpolator.h
+AgentFeeder.o: NoteHypothesis.h
 CepstralPitchTracker.o: NoteHypothesis.h

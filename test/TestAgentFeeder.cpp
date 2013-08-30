@@ -35,11 +35,13 @@ static const int low = 500, high = 700;
 
 typedef NoteHypothesis::Estimate Est;
 
+#define DEFAULT_SLACK_MS 40
+
 BOOST_AUTO_TEST_SUITE(TestAgentFeeder)
 
 BOOST_AUTO_TEST_CASE(feederEmpty)
 {
-    AgentFeeder f;
+    AgentFeeder f(DEFAULT_SLACK_MS);
     f.finish();
     AgentFeeder::Hypotheses accepted = f.getAcceptedHypotheses();
     BOOST_CHECK(accepted.empty());
@@ -52,7 +54,7 @@ BOOST_AUTO_TEST_CASE(feederSingle)
     Est e20(low, ms(20), 1);
     Est e30(low, ms(30), 1);
 
-    AgentFeeder f;
+    AgentFeeder f(DEFAULT_SLACK_MS);
     f.feed(e0);
     f.feed(e10);
     f.feed(e20);
@@ -76,7 +78,7 @@ BOOST_AUTO_TEST_CASE(feederPairSeparate)
     Est f20(high, ms(2020), 1);
     Est f30(high, ms(2030), 1);
 
-    AgentFeeder f;
+    AgentFeeder f(DEFAULT_SLACK_MS);
     f.feed(e0);
     f.feed(e10);
     f.feed(e20);
@@ -118,7 +120,7 @@ BOOST_AUTO_TEST_CASE(feederPairOverlapping)
     Est f43(high, ms(43), 1);
     Est f44(high, ms(44), 1);
 
-    AgentFeeder f;
+    AgentFeeder f(DEFAULT_SLACK_MS);
     f.feed(e0);
     f.feed(e10);
     f.feed(e20);
@@ -171,7 +173,7 @@ BOOST_AUTO_TEST_CASE(feederPairOverlappingLong)
     Est f70(high, ms(70), 1);
     Est f80(high, ms(80), 1);
 
-    AgentFeeder f;
+    AgentFeeder f(DEFAULT_SLACK_MS);
     f.feed(e0);
     f.feed(e10);
     f.feed(e20);
@@ -225,7 +227,7 @@ BOOST_AUTO_TEST_CASE(feederPairContaining)
     Est f40(high, ms(40), 1);
     Est f50(high, ms(50), 1);
 
-    AgentFeeder f;
+    AgentFeeder f(DEFAULT_SLACK_MS);
 
     f.feed(e0);
     f.feed(e10);
