@@ -6,6 +6,7 @@
 @prefix dc:       <http://purl.org/dc/elements/1.1/> .
 @prefix af:       <http://purl.org/ontology/af/> .
 @prefix foaf:     <http://xmlns.com/foaf/0.1/> .
+@prefix doap:     <http://usefulinc.com/ns/doap#> .
 @prefix cc:       <http://web.resource.org/cc/> .
 @prefix :         <#> .
 
@@ -13,17 +14,27 @@
     foaf:maker          <http://www.vamp-plugins.org/doap.rdf#template-generator> ;
     foaf:primaryTopic   <http://vamp-plugins.org/rdf/plugins/cepstral-pitchtracker> .
 
-:cepstral-pitchtracker a  vamp:PluginLibrary ;
+:library_maker
+    foaf:name "Chris Cannam" ;
+    foaf:logo <http://vamp-plugins.org/rdf/plugins/makers/qm.png> ;
+    foaf:page <http://c4dm.eecs.qmul.ac.uk/> .
+
+plugbase:library a  vamp:PluginLibrary ;
+    dc:title "Cepstral Pitch Tracker" ;
+    dc:description "A straightforward cepstral pitch- and note-tracker Vamp plugin, probably most suited to tracking singing pitch." ;
     vamp:identifier "cepstral-pitchtracker"  ; 
+    foaf:maker             :library_maker ; 
     vamp:available_plugin plugbase:cepstral-pitchtracker ; 
     foaf:page <http://code.soundsoftware.ac.uk/projects/cepstral-pitchtracker> ;
+    doap:download-page <http://code.soundsoftware.ac.uk/projects/cepstral-pitchtracker/files> ;
+    vamp:has_source true ;
     .
 
 plugbase:cepstral-pitchtracker a   vamp:Plugin ;
     dc:title              "Cepstral Pitch Tracker" ;
     vamp:name             "Cepstral Pitch Tracker" ;
     dc:description        """Estimate f0 of monophonic material using a cepstrum method.""" ;
-    foaf:maker            [ foaf:name "Chris Cannam" ] ; # FIXME could give plugin author's URI here
+    foaf:maker            :library_maker ;
     dc:rights             """Freely redistributable (BSD license)""" ;
 #   cc:license            <Place plugin license URI here and uncomment> ; 
     vamp:identifier       "cepstral-pitchtracker" ;
