@@ -22,8 +22,8 @@
     WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef _CEPSTRUM_H_
-#define _CEPSTRUM_H_
+#ifndef CEPSTRUM_H
+#define CEPSTRUM_H
 
 #include "vamp-sdk/FFT.h"
 #include <cmath>
@@ -70,7 +70,9 @@ public:
 
 	for (int i = 0; i < hs; ++i) {
 
-	    double power = in[i*2] * in[i*2] + in[i*2+1] * in[i*2+1];
+            double re = in[i*2];
+            double im = in[i*2+1];
+            double power = re * re + im * im;
 	    double mag = sqrt(power);
 	    magmean += mag;
 

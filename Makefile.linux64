@@ -1,5 +1,5 @@
 
-CFLAGS := -Wall -g -fPIC 
+CFLAGS := -Wall -O2 -fPIC 
 CXXFLAGS := $(CFLAGS)
 
 PLUGIN_LDFLAGS := -shared -Wl,-Bstatic -lvamp-sdk -Wl,-Bdynamic -Wl,-Bsymbolic -Wl,-z,defs -Wl,--version-script=vamp-plugin.map

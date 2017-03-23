@@ -22,8 +22,8 @@
     WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef _MEAN_FILTER_H_
-#define _MEAN_FILTER_H_
+#ifndef MEAN_FILTER_H
+#define MEAN_FILTER_H
 
 class MeanFilter
 {
@@ -59,11 +59,18 @@ public:
 	    for (int j = -half; j <= half; ++j) {
 		int ix = i + j + offset;
 		if (ix >= 0 && ix < m) {
-		    v += in[ix];
-		    ++n;
+                    double value = in[ix];
+                    if (value == value) { // i.e. not NaN
+                        v += value;
+                    }
+                    ++n;
 		}
 	    }
-	    out[i] = v / n;
+            if (n > 0) {
+                out[i] = v / n;
+            } else {
+                out[i] = 0.0;
+            }
 	}
     }
 

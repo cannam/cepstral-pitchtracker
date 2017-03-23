@@ -53,6 +53,12 @@ BOOST_AUTO_TEST_CASE(symmetry)
     BOOST_CHECK_SMALL(out[1] - out[7], 1e-14);
     BOOST_CHECK_SMALL(out[2] - out[6], 1e-14);
     BOOST_CHECK_SMALL(out[3] - out[5], 1e-14);
+    double mmcheck = 0;
+    for (int i = 0; i < 5; ++i) {
+        mmcheck += sqrt(in[i*2] * in[i*2] + in[i*2+1] * in[i*2+1]);
+    }
+    mmcheck /= 5;
+    BOOST_CHECK_EQUAL(mm, mmcheck);
 }
 
 BOOST_AUTO_TEST_CASE(oneHarmonic)
