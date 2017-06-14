@@ -55,11 +55,11 @@ plugbase:cepstral-pitchtracker_output_f0 a  vamp:DenseOutput ;
     vamp:min_value    50  ;
     vamp:max_value    900  ;
     vamp:bin_count        1 ;
-#   vamp:computes_event_type   <Place event type URI here and uncomment> ;
+    vamp:computes_event_type   af:Pitch ;
 #   vamp:computes_feature      <Place feature attribute URI here and uncomment> ;
 #   vamp:computes_signal_type  <Place signal type URI here and uncomment> ;
     .
-plugbase:cepstral-pitchtracker_output_notes a  vamp:DenseOutput ;
+plugbase:cepstral-pitchtracker_output_notes a  vamp:SparseOutput ;
     vamp:identifier       "notes" ;
     dc:title              "Notes" ;
     dc:description        """Derived fixed-pitch note frequencies"""  ;
@@ -69,8 +69,6 @@ plugbase:cepstral-pitchtracker_output_notes a  vamp:DenseOutput ;
     vamp:min_value    50  ;
     vamp:max_value    900  ;
     vamp:bin_count        1 ;
-#   vamp:computes_event_type   <Place event type URI here and uncomment> ;
-#   vamp:computes_feature      <Place feature attribute URI here and uncomment> ;
-#   vamp:computes_signal_type  <Place signal type URI here and uncomment> ;
+    vamp:computes_event_type   af:Note ;
     .
 
